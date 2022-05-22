@@ -1,5 +1,4 @@
 - [Virtual File System](#virtual-file-system)
-          + [tags: `Ubuntu` `VFS`](#tags---ubuntu---vfs-)
   * [proc file system](#proc-file-system)
   * [Writing to Proc Files](#writing-to-proc-files)
   * [Persisting /proc Files Changes](#persisting--proc-files-changes)
