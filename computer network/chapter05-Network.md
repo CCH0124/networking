@@ -293,4 +293,52 @@ Priority Queuing 的類之間部存在嚴格的服務優先權，循環調度器
         - DNS
         - Gateway
         - ...
- 
+# IPv6
+
+- 擴大地址容量
+    - 引入**任播地址(anycast address)**
+        - 讓數據包交付給一組主機中任一個
+- 簡化高效的 40 byte 部首
+    - 讓路由器更快地處理 IP 數據包
+- 流標籤
+    - 給予特殊流的封包加上標籤
+
+![](https://i.imgur.com/f9xXuc9.png)
+
+- Version
+    - IP 版本號
+- Traffic class
+    - 此 8-bit 字段與 IPv4 中 TOS 相似
+- Flow Label
+    - 該 20 bit 字段用於標示一條數據包的流
+        - 優先權
+- Payload length
+    - 16 bit 值作為一個無符號整數
+- Next header
+    - 數據包內容要交付給哪個協定，其值與 IPv4 中相同
+- Hop limit
+    - 轉發數據包的每台路由器對其值減 1，值為 0 則丟棄
+- Source and destination addresses
+    - 128 bit 地址
+- Data
+    - IPv6 數據包有效載荷
+    - 數據包抵達目的地時，該有效載荷從 IP 數據包中移出，並交給在下一個首部字段中指定的協定處裡
+
+### IPv4 中不存在 IPv6 的字段
+- Fragmentation/reassembly
+    - IPv6 不允許在中間路由器上進行分片與重組，只能在*源與目的*操作
+    - 如果太大路由器將其丟棄，並以 ICMP 發送封包太大訊息
+    - 分片與重組是耗時的，因此只將其功能放置在端系統中
+- Header checksum
+    - 快速處裡 IP 封包是關注重點
+- Options
+    - 不再是標準 IP 首部一部分
+    - 可能由 IPv6 Next header 指出的位置上 
+
+### IPv4 遷移至 IPv6
+- tunneling [RFC 4213]
+
+
+![](https://i.imgur.com/KeXcFxV.png)
+
+
