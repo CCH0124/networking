@@ -71,3 +71,42 @@ from [cloudflare](https://www.cloudflare.com/en-ca/learning/ddos/glossary/open-s
 
 ![](https://cf-assets.www.cloudflare.com/slt3lc6tev37/3m1ZkcaaBYHoodrEO3brv2/2819c4db294631b5753cd55de0c01bd9/1-physical-layer.svg)
 from [cloudflare](https://www.cloudflare.com/en-ca/learning/ddos/glossary/open-systems-interconnection-model-osi/)
+
+
+## TCP/IP
+
+![比較圖](http://fiberbit.com.tw/wp-content/uploads/2013/12/TCP-IP-model-vs-OSI-model.png) 
+from [fiberbit](http://fiberbit.com.tw)
+
+##### Application
+
+此層包括用於跨 IP 網路的**行程到行程通訊的協定**。應用層賴底層傳輸層(Transport Layer)協定來建立**主機到主機的數據傳輸**，傳輸層管理了網路通訊中的數據交換。
+
+##### Transport
+
+`TCP` 和 `UDP` 是傳輸層的主要協定，**為應用程式提供主機到主機的通訊服務**。傳輸協議負責面向連接的*通訊*、*可靠性*、*流控制*和*多路復用*。
+
+在 TCP 中，窗口大小(window size)管理流量控制，而 UDP 不管理擁塞流量，被認為是不可靠的。**每個端口標識負責處理來自網路通訊訊息的主機行程**，服務器上的每個端口都標識其流量，*發送方在本地生成一個隨機端口來標識自己*。
+
+下圖為 TCP 狀態圖
+![](https://upload.wikimedia.org/wikipedia/commons/f/f6/Tcp_state_diagram_fixed_new.svg) from [wikipedia](https://zh.wikipedia.org/zh-hk/File:Tcp_state_diagram_fixed_new.svg)
+
+##### Internet
+
+負責在網路之間傳輸數據。對於傳出的封包，它選擇下一跳主機並將其傳輸到該主機，方法是將其傳遞給適當的鏈路層(link-layer)。一旦封包被目的地接收到，網路層將把封包的有效載荷(payload)向上傳遞給適當的傳輸層(Transport Layer)協定。
+
+IP 提供基於最大傳輸單元 (maximum transmission unit,MTU) 的封包分段或碎片整理，這定義 IP 封包的最大大小。*IP 不保證數據包的正確到達目的地*，由於跨不同網路的封包傳輸本質上是*不可靠*且容易發生問題的，因此這種負擔在於通訊路徑的端點，非網路。**提供服務可靠性的功能在傳輸層**，校驗和確保接收到的封包中的訊息是準確的，但該層不驗證數據完整性，IP 地址標識網路上的封包。
+
+##### Link
+
+此層包括僅在主機連接到的本地網路上運行的網路協定，封包不路由到非本地網路，這是 Internet 層的作用。以太網(Ethernet)是這一層的主要協定，**主機由鏈路層地址或通常在其網路卡上的媒體訪問控制地址( Media Access Control addresses)標識**。一旦主機使用 Address Resolution Protocol (ARP) 確定，從本地網路發送的數據將由 Internet 層處理，該層還包括用於在兩個 Internet 層主機之間移動封包的協定。
+
+##### Physical layer
+定義用於網路的硬體組件。例如，實體網路層規定了通訊介質的物理特性；TCP/IP 的物理層詳細說明了硬體標準，例如 `IEEE 802.3`，即以太網網路介質的規範。
+
+
+下圖為 TCP/IP 數據流程
+
+![image](https://user-images.githubusercontent.com/17800738/170858512-b23c3eef-85ce-4c26-b807-2578f7bf8b8f.png)
+
+
