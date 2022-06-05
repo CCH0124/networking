@@ -104,11 +104,11 @@ Netfilter 是封包處理關鍵組件，是一個 kernel hook，*允許使用者
 Netfilter 有以下 hook
 | Netfilter hook | Iptables chain name | Description |
 | ---| ---| ---|
-|NF_IP_PRE_ROUTING|PREROUTING|當風包從外部機器或系統到達時觸發，剛進入網路層的封包|
-|NF_IP_LOCAL_IN|INPUT|當封包透過路由表目標 IP 地址與本機匹配時觸發|
-|NF_IP_FORWARD|NAT|觸發來源和目的地都不匹配主機 IP 地址的封包。表示這台主機代表其他主機路由的封包|
-|NF_IP_LOCAL_OUT|OUTPUT|當來自主機的封包離開主機時觸發，即向外轉發|
-|NF_IP_POST_ROUTING|POSTROUTING|無論來源的任何封包離開主機時觸發|
+|NF_IP_PRE_ROUTING|PREROUTING|當封包從外部機器或系統到達時觸發，剛進入網路層的封包，在進行任何路由判斷之前|
+|NF_IP_LOCAL_IN|INPUT|當封包透過路由表目標 IP 地址與本機匹配時觸發，即目的是本機|
+|NF_IP_FORWARD|NAT|觸發來源和目的地都不匹配主機 IP 地址的封包。表示這台主機代表其他主機路由的封包，即目的是其他機器|
+|NF_IP_LOCAL_OUT|OUTPUT|當來自主機的封包離開主機時觸發，即向外轉發，即本機產生的準備發送的封包|
+|NF_IP_POST_ROUTING|POSTROUTING|無論來源的任何封包離開主機時觸發，在經過路由判斷之後|
 
 `Netfilter` 在封包透過內核的過程中的特定階段觸發每個鉤子，`iptables` 直接將鏈的概念映射到 `Netfilter hooks`。
 
@@ -136,5 +136,6 @@ Netfilter 有以下 hook
 - Stolen : 不執行進一步的 hook，並允許用戶空間程式獲得封包所有權
 - Repeat : 讓封包*重新進入* hook 並被重新處理
 
-
+[a-deep-dive-into-iptables-and-netfilter-architecture](https://www.digitalocean.com/community/tutorials/a-deep-dive-into-iptables-and-netfilter-architecture)
+[a-deep-dive-into-iptables-and-netfilter-architecture 中文](https://arthurchiao.art/blog/deep-dive-into-iptables-and-netfilter-arch-zh/#1-iptables-%E5%92%8C-netfilter-%E6%98%AF%E4%BB%80%E4%B9%88)
 ### Conntrack
