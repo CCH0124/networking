@@ -114,3 +114,27 @@ Netfilter 有以下 hook
 
 ![Netfilter hooks](https://flylib.com/books/3/475/1/html/2/images/0131777203/graphics/20fig01.gif) from "https://flylib.com"
 
+數據包的 `Netfilter` hook 流程取決於兩件事：
+- 數據包來源是否是主機
+- 數據包目標是否是主機
+
+如果一個行程發送一個發往同一主機的封包，它會在*重新進入*系統並觸發 `NF_IP_PRE_ROUTING` 和 `NF_IP_LOCAL_IN` 之前觸發 `NF_IP_LOCAL_OUT` 和 `NF_IP_POST_ROUTING`。
+
+|Packet source |Packet destination| Hooks (in order)|
+|---|---|---|
+|Local machine |Local machine |NF_IP_LOCAL_OUT, NF_IP_LOCAL_IN|
+|Local machine |External machine |NF_IP_LOCAL_OUT, NF_IP_POST_ROUTING|
+|External machine| Local machine |NF_IP_PRE_ROUTING, NF_IP_LOCAL_IN|
+|External machine| External machine |NF_IP_PRE_ROUTING, NF_IP_FORWARD, NF_IP_POST_ROUTING|
+
+從機器到自身的封包將觸發 `NF_IP_LOCAL_OUT` 和 `NF_IP_POST_ROUTING`，然後*離開*網路介面，它們會*重新進入*並被視為來自任何其他來源的封包。NAT 僅影響 `NF_IP_PRE_ROUTING` 和 `NF_IP_LOCAL_OUT` 中的本地路由決策。
+
+程式可調用 `NF_REGISTER_NET_HOOK`（Linux 4.13 之前的 NF_REGISTER_HOOK）來註冊 hook。每次封包匹配時都會調用該 hook。根據返回值，`Netfilter` 掛鉤可以觸發多種操作：
+- Accept : 繼續封包處理
+- Drop : 丟棄封包，無需進一步處理
+- Queue : 將封包傳遞給用戶空間程式
+- Stolen : 不執行進一步的 hook，並允許用戶空間程式獲得封包所有權
+- Repeat : 讓封包*重新進入* hook 並被重新處理
+
+
+### Conntrack
