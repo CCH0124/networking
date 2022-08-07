@@ -181,3 +181,15 @@ acct  expect_hashsize  hashsize  nf_conntrack_helper
 |ESTABLISHED| 封包有收有發| 接收到 TCP SYN 且發送 TCP SYN/ACK 回應|
 |RELATED| 打開一個附加連接，其中元數據表示它與*原始連接相關*| 具有 ESTABLISHED 連接的 FTP 應用程式會打開其他數據連接|
 |INVALID| 封包本身無效，或與另一個 Conntrack 連接狀態不正確匹配| 接收到 TCP RST，但沒有先前的連接|
+
+要啟用 Conntrack 需要有 `nf_conntrack_ipv4` kernel 模組，透過 `sudo modprobe nf_conntrack` 載入它，這樣在安裝 `conntrack` 就可以使用 `conntrack` CLI 了。
+```bash
+$ lsmod | grep nf_conntrack
+$ sudo modprobe nf_conntrack
+$ lsmod | grep nf_conntrack
+nf_conntrack          167936  0
+nf_defrag_ipv6         24576  1 nf_conntrack
+nf_defrag_ipv4         16384  1 nf_conntrack
+libcrc32c              16384  3 nf_conntrack,btrfs,raid456
+$ sudo apt install conntrack
+```
