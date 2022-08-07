@@ -139,8 +139,45 @@ Netfilter 有以下 hook
 [a-deep-dive-into-iptables-and-netfilter-architecture](https://www.digitalocean.com/community/tutorials/a-deep-dive-into-iptables-and-netfilter-architecture)
 [a-deep-dive-into-iptables-and-netfilter-architecture 中文](https://arthurchiao.art/blog/deep-dive-into-iptables-and-netfilter-arch-zh/#1-iptables-%E5%92%8C-netfilter-%E6%98%AF%E4%BB%80%E4%B9%88)
 ### Conntrack
-Conntrack 是 Netfilter 的一個組件，用於追蹤與機器的連接狀態。如果沒有連接追蹤，封包流將更不透明。因此，Conntrack 在處理防火牆或 NAT 的系統上很重要，其可以讓防火牆區分回應和任意的封包。舉個例子，可以允許應用程式建立出站連接並執行 HTTP 請求，而遠程服務器則無法發送數據或入站連接。
+Conntrack 是 Netfilter 的一個組件，用於追蹤與機器的連接狀態。如果沒有連接追蹤，封包流將更不透明。因此，Conntrack 在處理防火牆或 NAT 的系統上很重要，其可以讓防火牆區分回應和任意的封包。舉個例子，可以允許應用程式建立出站連接並執行 HTTP 請求，而遠程服務器則無法發送數據或入站連接，如下圖。
+
+![](https://arthurchiao.art/assets/img/conntrack/node-conntrack.png) From arthurchiao.art
 
 NAT 依賴於 Conntrack 運行，iptables 將 NAT 分為兩種類型：SNAT（source NAT，iptables 重寫來源地址）和 DNAT（destination NAT，iptables 重寫目標地址）。透過連線追蹤來修改 SNAT/DNAT，這可以實現一致的路由決策，例如將負載均衡器中的連接*固定*到特定的後端或機器。*在 Kubernetes 中，kube-proxy 通過 iptables 實現了服務負載均衡*。
 
 Conntrack 透過元組識別連接，由 source address、source port、destination address、destination port 和 L4 protocol 組成。所有 L4 連線在連線的每一側都有一個地址和端口，因為，*網際網路使用地址進行路由，而計算機使用端口進行應用程式映射*。Conntrack 將這些連線稱為流(Flow)，流包含有關連線及其狀態的元數據。
+
+Conntrack 將流儲存在哈希表(Hash Table)中，如下圖，但可能發生的一個嚴重問題是，當 Conntrack 用完用於連線追蹤的空間，並且無法建立新連接。如果主機直接暴露在 Internet 上運行，則使用短暫或不完整的連接來壓倒 Conntrack 是導致拒絕服務 (DOS) 的簡單方法。
+
+![image](https://user-images.githubusercontent.com/17800738/183283565-e5431e89-eef3-4f13-a94b-d654075e722b.png)
+
+>在 CT(連線追蹤、conntrack) 中，一個元组（tuple）定義的一條流（flow ）就表示一條連接（connection），因此與 TCP 連接是不同的概念
+
+Conntrack 最大大小設置在 `/proc/sys/net/netfilter/nf_conntrack_max`，哈希表大小是 `/sys/module/nf_conntrack/parameters/hashsize`。可以藉由 `sysctl` 進行數值上調整
+```bash
+/proc/sys/net/netfilter$ ls
+nf_conntrack_acct                nf_conntrack_helper                   nf_conntrack_tcp_timeout_last_ack
+nf_conntrack_buckets             nf_conntrack_icmp_timeout             nf_conntrack_tcp_timeout_max_retrans
+nf_conntrack_checksum            nf_conntrack_icmpv6_timeout           nf_conntrack_tcp_timeout_syn_recv
+nf_conntrack_count               nf_conntrack_log_invalid              nf_conntrack_tcp_timeout_syn_sent
+nf_conntrack_events              nf_conntrack_max                      nf_conntrack_tcp_timeout_time_wait
+nf_conntrack_expect_max          nf_conntrack_tcp_be_liberal           nf_conntrack_tcp_timeout_unacknowledged
+nf_conntrack_frag6_high_thresh   nf_conntrack_tcp_loose                nf_conntrack_udp_timeout
+nf_conntrack_frag6_low_thresh    nf_conntrack_tcp_max_retrans          nf_conntrack_udp_timeout_stream
+nf_conntrack_frag6_timeout       nf_conntrack_tcp_timeout_close        nf_log
+nf_conntrack_generic_timeout     nf_conntrack_tcp_timeout_close_wait   nf_log_all_netns
+nf_conntrack_gre_timeout         nf_conntrack_tcp_timeout_established
+nf_conntrack_gre_timeout_stream  nf_conntrack_tcp_timeout_fin_wait
+
+/sys/module/nf_conntrack/parameters$ ls
+acct  expect_hashsize  hashsize  nf_conntrack_helper
+```
+
+一個 Conntrack 數據包含一個連接狀態，它是其中四種狀態之一。需要注意的是，作為第 3 層（Network layer）工具，Conntrack 狀態不同於第 4 層（Protocol layer）狀態。下表詳細說明了這四種狀態。
+
+|State|Description|Example|
+|---|---|---|
+|NEW| 發送或接收有效封包，但未看到回應 | 接收到 TCP SYN |
+|ESTABLISHED| 封包有收有發| 接收到 TCP SYN 且發送 TCP SYN/ACK 回應|
+|RELATED| 打開一個附加連接，其中元數據表示它與*原始連接相關*| 具有 ESTABLISHED 連接的 FTP 應用程式會打開其他數據連接|
+|INVALID| 封包本身無效，或與另一個 Conntrack 連接狀態不正確匹配| 接收到 TCP RST，但沒有先前的連接|
