@@ -139,3 +139,8 @@ Netfilter 有以下 hook
 [a-deep-dive-into-iptables-and-netfilter-architecture](https://www.digitalocean.com/community/tutorials/a-deep-dive-into-iptables-and-netfilter-architecture)
 [a-deep-dive-into-iptables-and-netfilter-architecture 中文](https://arthurchiao.art/blog/deep-dive-into-iptables-and-netfilter-arch-zh/#1-iptables-%E5%92%8C-netfilter-%E6%98%AF%E4%BB%80%E4%B9%88)
 ### Conntrack
+Conntrack 是 Netfilter 的一個組件，用於追蹤與機器的連接狀態。如果沒有連接追蹤，封包流將更不透明。因此，Conntrack 在處理防火牆或 NAT 的系統上很重要，其可以讓防火牆區分回應和任意的封包。舉個例子，可以允許應用程式建立出站連接並執行 HTTP 請求，而遠程服務器則無法發送數據或入站連接。
+
+NAT 依賴於 Conntrack 運行，iptables 將 NAT 分為兩種類型：SNAT（source NAT，iptables 重寫來源地址）和 DNAT（destination NAT，iptables 重寫目標地址）。透過連線追蹤來修改 SNAT/DNAT，這可以實現一致的路由決策，例如將負載均衡器中的連接*固定*到特定的後端或機器。*在 Kubernetes 中，kube-proxy 通過 iptables 實現了服務負載均衡*。
+
+Conntrack 透過元組識別連接，由 source address、source port、destination address、destination port 和 L4 protocol 組成。所有 L4 連線在連線的每一側都有一個地址和端口，因為，*網際網路使用地址進行路由，而計算機使用端口進行應用程式映射*。Conntrack 將這些連線稱為流(Flow)，流包含有關連線及其狀態的元數據。
