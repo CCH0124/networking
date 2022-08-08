@@ -192,4 +192,31 @@ nf_defrag_ipv6         24576  1 nf_conntrack
 nf_defrag_ipv4         16384  1 nf_conntrack
 libcrc32c              16384  3 nf_conntrack,btrfs,raid456
 $ sudo apt install conntrack
+$ sudo iptables -A INPUT -m conntrack --ctstate NEW,RELATED,ESTABLISHED -j ACCEPT
 ```
+```bash
+# 一條 SSH 連線的追蹤
+$ sudo conntrack -L -p tcp
+tcp      6 431999 ESTABLISHED src=192.168.133.135 dst=192.168.133.1 sport=22 dport=52636 src=192.168.133.1 dst=192.168.133.135 sport=52636 dport=22 [ASSURED] mark=0 use=1
+```
+
+其格式會像是
+```
+<protocol> <protocol number> <flow TTL> [flow state>] <source ip> <dest ip> <source port> <dest port> [] <expected return
+packet>
+```
+
+如果一台機器在路由器後面，發往該機器的封包將被發送到路由器，而來自該機器的封包將以機器地址而不是路由器地址作為來源。
+
+## Routing
+
+kernel 必須決定將封包發送到哪裡。在大多數情況下，目標機器不會在同一個網路中。但你的計算機可以做的最好的事情是將其傳遞給更接近能夠達到 1.2.3.4 的另一台主機。路由表透過將已知子網映射到網關 IP 地址和接口來實現此目的。我們可以使用 `route` 列出已知路由，通常機器有一個本地網路的路由和一個 0.0.0.0/0 的路由。以下是本地網路上可以訪問 Internet 機器的路由表：
+
+```bash
+$ ip route list
+default via 192.168.133.2 dev ens33 proto static
+192.168.133.0/24 dev ens33 proto kernel scope link src 192.168.133.135
+```
+路由會匹配較小的地址集，如果我們有兩條具有相同特異性的路由，那麼具有較低度量(權重)的路由將是首選的。
+### High-Level Routing
+
