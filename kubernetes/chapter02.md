@@ -220,4 +220,6 @@ default via 192.168.133.2 dev ens33 proto static
 路由會匹配較小的地址集，如果我們有兩條具有相同特異性的路由，那麼具有較低度量(權重)的路由將是首選的。
 
 ### iptables
-iptables 可用於創建防火牆規則和審計日誌(audit logs)、變異(NAT)和重新路由封包等。iptables 使用 Netfilter，它允許 iptables 攔截和變異封包。
+iptables 可用於創建防火牆規則和審計日誌(audit logs)、變異(NAT)和重新路由封包等。iptables 使用 Netfilter，它允許 iptables 攔截和變異封包。有許多工具可以提供更簡單的界面來管理 iptables 規則，例如 ufw 和 firewalld 這樣的防火牆工具。Kubernetes 組件特別是 kubelet 和 kube-proxy 以這種方式生成 iptables 規則，了解 iptables 對於了解大多數集群中 pod 和節點的訪問和路由非常重要。
+
+iptable 有三個關鍵分別是，table、chain 和 rule。它們被認為是分層的，table 包含 chain，chain 包含 rule。
