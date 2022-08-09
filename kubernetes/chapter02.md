@@ -218,5 +218,6 @@ default via 192.168.133.2 dev ens33 proto static
 192.168.133.0/24 dev ens33 proto kernel scope link src 192.168.133.135
 ```
 路由會匹配較小的地址集，如果我們有兩條具有相同特異性的路由，那麼具有較低度量(權重)的路由將是首選的。
-### High-Level Routing
 
+### iptables
+iptables 可用於創建防火牆規則和審計日誌(audit logs)、變異(NAT)和重新路由封包等。iptables 使用 Netfilter，它允許 iptables 攔截和變異封包。
