@@ -222,4 +222,120 @@ default via 192.168.133.2 dev ens33 proto static
 ### iptables
 iptables 可用於創建防火牆規則和審計日誌(audit logs)、變異(NAT)和重新路由封包等。iptables 使用 Netfilter，它允許 iptables 攔截和變異封包。有許多工具可以提供更簡單的界面來管理 iptables 規則，例如 ufw 和 firewalld 這樣的防火牆工具。Kubernetes 組件特別是 kubelet 和 kube-proxy 以這種方式生成 iptables 規則，了解 iptables 對於了解大多數集群中 pod 和節點的訪問和路由非常重要。
 
-iptable 有三個關鍵分別是，table、chain 和 rule。它們被認為是分層的，table 包含 chain，chain 包含 rule。
+iptable 有三個關鍵分別是，table(表)、chain(鏈) 和 rule(規則)。它們被認為是分層的，table 包含 chain，chain 包含 rule。
+
+iptables 將表組合在一起，三個最常用的表是 `Filter`（用於防火牆相關規則）、`NAT`（用於 NAT 相關規則）和 `Mangle`（用於非 NAT 封包規則），而 iptables 以特定順序執行 table。
+
+chain 包含了一系列的 rule，*當一個封包觸發一個 chain 時，chain 中的 rule 按順序進行比對*。chain 存在於 table 中，並根據 Netfilter 鉤子組織規則。有五個內置的 chain，每個都對應一個 Netfilter 鉤子。
+
+*rule 是條件和動作的組合，可以稱為 `target`*。例如，如果一個封包的地址是 22 port，則丟棄它。
+
+##### iptables tables
+iptables 中的表映射到特定的功能集合，其中每個表負責特定類型的操作。更具體說，一個表只能包含特定的目標類型，並且許多目標類型只能在特定的表中使用。下表為 iptables 的分類型
+
+| Table | Purpose |
+|---|---|
+|Filter| Filter 表處理封包要接受或拒絕|
+|NAT| NAT 表用於修改源或目標 IP 地址|
+|Mangle| Mangle 表可以執行封包的頭(header)通用編輯，但它不適用於 NAT。它還可以使用 iptables-only 元數據*標記*數據包|
+|Raw| Raw 表允許在處理 connection tracking 和其他表之前進行封包變更。它最常見的用途是禁用某些封包的 connection tracking|
+|Security| SELinux 使用 Security 表進行封包處理。它不適用於未使用 SELinux 的機器|
+
+*iptables 以特定順序執行表 Raw、Mangle、NAT、Filter*。然而執行順序是鏈(chain)，然後是表(table)。
+
+##### iptables chains
+當一個封包觸發或通過一個鏈時，每個規則都會被依次比對，直到封包匹配一個 *terminating target*（如 DROP），或者封包到達鏈的末端。內置的鏈是 `PREROUTING`、`INPUT`、`NAT`、`OUTPUT` 和 `POSTROUTING`，這些由 Netfilter 鉤子整合。下表為對應
+
+|iptables chain | Netfilter hook|
+| --- | --- |
+|PREROUTIN|NF_IP_PRE_ROUTING|
+|INPUT|NF_IP_LOCAL_IN|
+|NAT|NF_IP_FORWARD|
+|OUTPUT|NF_IP_LOCAL_OUT|
+|POSTROUTING|NF_IP_POST_ROUTING|
+
+下圖可以推斷給定封包的 iptables 鏈執行和排序的等效圖。
+![image](https://user-images.githubusercontent.com/17800738/183914378-016c3d24-7421-421c-9156-d87e02fd6f8c.png)
+
+讓我們以三台機器為例，IP 地址分別為 10.0.0.1、10.0.0.2 和 10.0.0.3。我們將從機器 1（IP 為 10.0.0.1）的角度展示一些路由場景。
+
+| Packet description | Packet source | Packet destination | Tables processed |
+|---|---|---|---|
+| 從別台機器進入的封包 | 10.0.0.2  |  10.0.0.1  | PREROUTING、INPUT|
+| 從別台機器進入的封包但目的地非此機器| 10.0.0.2  | 10.0.0.3 | PREROUTING、NAT、POSTROUTING|
+| 從本機出去的封包，目的為另一台機器| 10.0.0.1 | 10.0.0.2 |OUTPUT、POSTROUTING|
+| 本機產生的封包，目的也為本機| 127.0.0.1 | 127.0.0.1 | OUTPUT、POSTROUTING(然後 PREROUTING、INPUT 隨著封包透過 loopback 接口重新進入) |
+
+
+回想一下，當一個封包觸發一個鏈(chain)時，iptables 會按以下順序執行該鏈中的表，特別是每個表中的規則：
+1. Raw
+2. Mangle
+3. NAT
+4. Filter
+
+大多數鏈不包含所有表，但是，相對執行順序保持不變，這是減少冗餘的設計決策。下表列出了包含每個鏈的表
+
+ | |Raw| Mangle| NAT| Filter|
+ |---|---|---|---|---|
+ | PREROUTING |✓ | ✓|✓ | |
+ | INPUT | | ✓|✓ |✓ |
+ | FORWARD | | ✓| | ✓|
+ | OUTPUT |✓ |✓ |✓ |✓ |
+ | POSTROUTING| |✓ |✓ | |
+ 
+ 可以使用 `iptables -L -t <table>` 自己列出與表對應的鏈
+ 
+ ```bash
+ $ sudo iptables -L -t filter
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain FORWARD (policy DROP)
+target     prot opt source               destination
+DOCKER-USER  all  --  anywhere             anywhere
+DOCKER-ISOLATION-STAGE-1  all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+DOCKER     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere             ctstate RELATED,ESTABLISHED
+DOCKER     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+ACCEPT     all  --  anywhere             anywhere
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+
+Chain DOCKER (2 references)
+target     prot opt source               destination
+
+Chain DOCKER-ISOLATION-STAGE-1 (1 references)
+target     prot opt source               destination
+DOCKER-ISOLATION-STAGE-2  all  --  anywhere             anywhere
+DOCKER-ISOLATION-STAGE-2  all  --  anywhere             anywhere
+RETURN     all  --  anywhere             anywhere
+
+Chain DOCKER-ISOLATION-STAGE-2 (2 references)
+target     prot opt source               destination
+DROP       all  --  anywhere             anywhere
+DROP       all  --  anywhere             anywhere
+RETURN     all  --  anywhere             anywhere
+
+Chain DOCKER-USER (1 references)
+target     prot opt source               destination
+RETURN     all  --  anywhere             anywhere
+ ```
+ 
+>NAT 表有一個要注意的點，`DNAT` 可以在 `PREROUTING` 或 `OUTPUT` 中執行，而 `SNAT` 只能在 `INPUT` 或 `POSTROUTING` 中執行。
+
+舉個例子，假設有一個發往我們主機的入站封包。執行順序是
+
+1. PREROUTING
+a. Raw
+b. Mangle
+c. NAT
+2. INPUT
+a. Mangle
+b. NAT
+c. Filter
+
