@@ -339,3 +339,13 @@ a. Mangle
 b. NAT
 c. Filter
 
+下圖為經過 iptables 的封包流
+![image](https://user-images.githubusercontent.com/17800738/184113205-6981849f-c1a6-436c-a843-b44d97c59f0f.png)
+
+所有 iptables 規則都屬於一個表和鏈，它們可能的組合在上途中用一個類似點的物件表示。iptables 根據封包觸發的 Netfilter 鉤子的順序評估鏈和規則。對於給定的鏈，iptables 會在它所在的每個表中該鏈，如果我們追蹤來自本地主機的封包流，會看到將按順序評估以下表/鏈對
+1. Raw/OUTPUT
+2. Mangle/OUTPUT
+3. NAT/OUTPUT
+4. Filter/OUTPUT
+5. Mangle/POSTROUTING
+6. NAT/POSTROUTING
