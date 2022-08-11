@@ -349,3 +349,6 @@ c. Filter
 4. Filter/OUTPUT
 5. Mangle/POSTROUTING
 6. NAT/POSTROUTING
+
+##### Subchains
+用戶可以定義自己的子鏈(Subchain)並用 `JUMP` 執行它們。iptables 會以相同的方式逐個目標執行這樣的鏈，直到終止目標匹配。 iptables 有效率針對進出系統的每個封包運行數十、數百或數千個 if 語句，這對封包延遲、CPU 使用和網路吞吐量具有顯著的影響。但在 Kubernetes 中，iptables 的性能在具有多個 pod 的服務中仍然是一個問題，這使得其他使用較少或不使用 iptables 的解決方案，例如 IPVS 或 eBPF 這更具吸引力。
