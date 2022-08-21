@@ -352,3 +352,22 @@ c. Filter
 
 ##### Subchains
 用戶可以定義自己的子鏈(Subchain)並用 `JUMP` 執行它們。iptables 會以相同的方式逐個目標執行這樣的鏈，直到終止目標匹配。 iptables 有效率針對進出系統的每個封包運行數十、數百或數千個 if 語句，這對封包延遲、CPU 使用和網路吞吐量具有顯著的影響。但在 Kubernetes 中，iptables 的性能在具有多個 pod 的服務中仍然是一個問題，這使得其他使用較少或不使用 iptables 的解決方案，例如 IPVS 或 eBPF 這更具吸引力。
+
+##### iptables rules
+規則有兩部分：*匹配條件*和*動作*（target）。匹配條件描述封包屬性，如果封包匹配，則執行該操作；如果封包不匹配，iptables 將檢查下一條規則。
+
+匹配條件檢查給定封包是否滿足某些條件，像是是否具有特定的來源地址。但要注意的是 table/chain 操作順序很重要，下表顯示了一些匹配類型
+
+|Match type |Flag(s)| Description|
+|---|---|---|
+|Source|-s, --src, --source|封包是否符合指定來源位置|
+|Destination|-d, --dest, --destination|封包是否符合指定目標位置|
+|Protocol|-p, --protocol|封包是否符合指定協定|
+|In interface |-i, --in-interface|封包是否符合指定進入的網路接口|
+|Out interface |-o, --out-interface|封包是否符合指定離開的網路接口|
+|State|-m state --state <states>|封包是否符合來自處於逗號分隔狀態之一的連接的封包。這使用了 Conntrack 狀態（NEW、ESTABLISHED、RELATED、INVALID）|
+
+有兩種目標()動作：終止(terminating )和非終止(nonterminating)。*終止目標將不繼續 iptables 檢查鏈中的後續目標，本質上充當最終決定*；非終止目標則反之。`ACCEPT`、`DROP`、`REJECT` 和 `RETURN` 都是終止目標。`ACCEPT` 和 `RETURN` 僅在其鏈內終止，也就是說，*如果封包在子鏈中命中 `ACCEPT` 目標，則父鏈將恢復處理並可能丟棄或拒絕該目標*。
+
+
+    
