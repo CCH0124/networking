@@ -398,5 +398,26 @@ c. Filter
 目標(target)既屬於表(table)又屬於鏈(chain)，它們控制 iptables 何時對給定數據包執行上述目標。
 
 ##### Practical iptables
+你可以如下顯示 iptables 規則
+
+```bash
+$ sudo iptables -L
+[sudo] password for itachi:
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination
+ACCEPT     all  --  anywhere             anywhere             ctstate NEW,RELATED,ESTABLISHED
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination
+```
+
+`--line-numbers` 顯示鏈中每個規則的編號，這在插入或刪除規則時會很有幫助。`-I <chain> <line>` 指定插入至某編號的一條規則，在該行的前一條規則之前。
+
+通常設定 iptables 規則是 `iptables [-t table] {-A|-C|-D} chain rule-specification`，`-A` 表示附加；`-C` 表示確認(check)；`-D` 表示刪除。
+
+>iptables 規則不會在重啟後保留。iptables 提供 `iptables-save` 和 `iptables-restore` 工具，可以手動使用也可以透過簡單的自動化來捕獲或重新加載規則。這是大多數防火牆工具透過在每次系統啟動時自動創建自己的 iptables 規則來覆蓋。
 
 
