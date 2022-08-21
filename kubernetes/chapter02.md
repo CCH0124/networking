@@ -365,9 +365,38 @@ c. Filter
 |Protocol|-p, --protocol|封包是否符合指定協定|
 |In interface |-i, --in-interface|封包是否符合指定進入的網路接口|
 |Out interface |-o, --out-interface|封包是否符合指定離開的網路接口|
-|State|-m state --state <states>|封包是否符合來自處於逗號分隔狀態之一的連接的封包。這使用了 Conntrack 狀態（NEW、ESTABLISHED、RELATED、INVALID）|
+|State|-m state --state \<states\>|封包是否符合來自處於逗號分隔狀態之一的連接的封包。這使用了 Conntrack 狀態（NEW、ESTABLISHED、RELATED、INVALID）|
 
 有兩種目標()動作：終止(terminating )和非終止(nonterminating)。*終止目標將不繼續 iptables 檢查鏈中的後續目標，本質上充當最終決定*；非終止目標則反之。`ACCEPT`、`DROP`、`REJECT` 和 `RETURN` 都是終止目標。`ACCEPT` 和 `RETURN` 僅在其鏈內終止，也就是說，*如果封包在子鏈中命中 `ACCEPT` 目標，則父鏈將恢復處理並可能丟棄或拒絕該目標*。
 
+下表為 iptables 目標類型和行為
 
-    
+| Target type| Applicable tables| Description |
+|---|---|---|
+|AUDIT| All | 記錄有關放行、丟棄或拒絕封包的數據| 
+|ACCEPT| Filter | 放行封包且無需進一步修改| 
+|DNAT| NAT |  修改目的地址 | 
+|DROPs| Filter | 丟棄封包 | 
+|JUMP |All | 讓封包去執行另一個鏈。一旦該鏈完成執行，父鏈的執行將繼續|
+|LOG | All| 透過 kernel log 記錄封包內容|
+|MARK | All| *為封包設置一個特殊的整數*，用作 Netfilter 的標識符。該整數可用於其他 iptables 決策，並且不會寫入封包本身|
+|MASQUERADE | NAT| 修改封包的來源地址，將其替換為指定網路接口的地址。這類似於 SNAT，但不需要事先知道機器的 IP 地址|
+|REJECT | Filter| 丟棄封包並發送拒絕原因 |
+|RETURN | All| 停止處理當前鏈或子鏈。**這不是終止目標(nonterminating)，如果存在父鏈，則該鏈將繼續處理**|
+|SNAT | NAT| 修改封包的來源地址，將其*替換為固定地址*|    
+
+
+下表為 iptables 範例
+
+|Command| Explanation|
+|---|---|
+|iptables -A INPUT -s 10.0.0.1 | 來源地址為 10.0.0.1，且是進入的封包 |
+|iptables -A INPUT -p ICMP|接受 ICMP 協定封包，且是進入的封包|
+|iptables -A INPUT -p tcp --dport 443 |接受協定為 TCP 且目標 port 是 443 並且也是進入的封包|
+|iptables -A INPUT -p tcp --dport 22 -j DROP|協定為 TCP 且目標 port 是 22 並且也是進入的封包，則將該封包丟棄|
+
+目標(target)既屬於表(table)又屬於鏈(chain)，它們控制 iptables 何時對給定數據包執行上述目標。
+
+##### Practical iptables
+
+
