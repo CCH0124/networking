@@ -420,4 +420,41 @@ target     prot opt source               destination
 
 >iptables 規則不會在重啟後保留。iptables 提供 `iptables-save` 和 `iptables-restore` 工具，可以手動使用也可以透過簡單的自動化來捕獲或重新加載規則。這是大多數防火牆工具透過在每次系統啟動時自動創建自己的 iptables 規則來覆蓋。
 
+在 Kubernetes 中，儘管 POD 有一個唯一 IP 位置，但透過偽裝可以讓 POD 使用節點的 IP 位置。這對於存取集群外部服務是必要的，因為 POD 無法直接透過私有 IP 與外部網路通訊。`MASQUERADE` 目標類似於 SNAT；但是，它不需要預先知道和指定 `--source-address`，因為對每個封包都會動態獲取指定輸出網卡的 IP，因此如果網卡的 IP 發生了變化，`MASQUERADE` 規則不受影響。
+
+```bash
+iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+```
+iptables 可以執行連接級別的負載平衡，或更準確的說連接服務執行時需要關聯其他系統的行為。**該技術依賴於 DNAT 規則和隨機選擇（避免每個連接都被路由到第一個 DNAT 目標）**：
+
+```bash
+$ iptables -t nat -A OUTPUT -p tcp --dport 80 -d $FRONT_IP -m
+statistic \
+--mode random --probability 0.5 -j DNAT --to-destination
+$BACKEND1_IP:80
+$ iptables -t nat -A OUTPUT -p tcp --dport 80 -d $FRONT_IP \
+-j DNAT --to-destination $BACKEND2_IP:80
+```
+
+上面範例，有 50% 機會會被路由至第一個後端服務(BACKEND1_IP)，否則會被路由至下一條規則，保證會連接至第二個後端(BACKEND2_IP)。**為了有平等的機會路由到任何後端，第 n 個後端必須有 `1/n` 的機會被路由到**。如果有三個後端，則機率需要為 `0.3333....`、`0.5` 和 `1`。
+
+當 Kubernetes 對服務使用 iptables 負載均衡時，它會創建一個鏈，如下:
+
+```bash
+Chain KUBE-SVC-I7EAKVFJLYM7WH25 (1 references)
+target prot opt source destination
+KUBE-SEP-LXP5RGXOX6SCIC6C all -- anywhere anywhere
+statistic mode random probability 0.25000000000
+KUBE-SEP-XRJTEP3YTXUYFBMK all -- anywhere anywhere
+statistic mode random probability 0.33332999982
+KUBE-SEP-OMZR4HWUSCJLN33U all -- anywhere anywhere
+statistic mode random probability 0.50000000000
+KUBE-SEP-EELL7LVIDZU4CPY6 all -- anywhere anywhere
+```
+但使用 DNAT 的附載均衡有幾個要注意的點。*總是將同一連接上的應用程式等級查詢映射到同一後端*。
+
+儘管 iptables 在 Linux 中被廣泛使用，但*存在大量規則時它會變得很慢*，且只提供有限的負載均衡功能。
+
+### IPVS
+IP Virtual Server (IPVS) 是一個 L4 的 Linux  負載均衡器。
 
