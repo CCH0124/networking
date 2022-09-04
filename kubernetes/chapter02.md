@@ -460,3 +460,33 @@ IP Virtual Server (IPVS) 是一個 L4 的 Linux  負載均衡器。
 
 ![image](https://user-images.githubusercontent.com/17800738/188311915-d0f6e9c0-97e8-42c3-bcd2-6bf8a8614511.png)
 
+iptables 透過各個 DNAT 規則的權重決定路由連接來進行簡單的 L4 負載均衡。與 iptables 相比，IPVS 支持多種負載均衡模式，如下表
+
+IPVS modes supported in Kubernetes
+|Name|Shortcode|Description|
+|---|---|---|
+|Round-robin |rr| 在一個循環中將後續連線發送到下一個主機位置。與 iptables 啟用的隨機路由相比，這增加了發送到給定主機的後續連線之間的時間。|
+|Least connection|lc|將連接發送到當前被連線最少的主機。|
+|Destination hashing|dh|根據連線的目標地址，確定性的將連線發送到特定主機|
+|Source hashing|sh |根據連線的來源地址，確定性的將連線發送到特定主機|
+|Shortest expected delay|sed|將連線發送到具有最低連接權重比的主機|
+|Never queue|nq|將連線發送到沒有連線的任何主機，否則使用 `shortest expected delay` 策略|
+
+更詳細可[參考](http://www.linuxvirtualserver.org/docs/scheduling.html)該鏈結。
+
+IPVS 支援封包轉發模式
+- NAT 重寫來源地址和目標地址
+- DR 將 IP 資料包封裝在 IP 資料包(datagrams)中
+- IP 隧道(tunnel)透過將資料框(data frame)的 MAC 地址改寫為所選後端服務器的 MAC 地址，直接將封包路由到後端服務
+
+>DR 是一種附載均衡模式
+
+當 iptables 作為負載均衡器的問題時，需要考慮三個方面
+##### Number of nodes in the cluster
+一個例子是在一個 5000 個節點的集群中使用 `NodePort`，如果有 2000 個 `service` 物件並且每個 `service` 有 10 個 pod，這將導致每個工作節點上至少有 20000 條 iptables 記錄，這會使內核非常忙碌。
+
+##### Time
+當有 5,000 個 `service`（40,000 條規則）時，添加一條規則所花費的時間為 11 分鐘。對於 20,000 個 `service`（160,000 條規則），需要 5 小時。
+
+##### Latency
+訪問服務存在延遲，即路由延遲；每個封包必須遍歷 iptables 列表，直到匹配。添加/刪除規則存在延遲，從廣泛的列表中插入和刪除是一項大規模的密集操作。
