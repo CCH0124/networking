@@ -516,3 +516,8 @@ TCP 1.1.1.1.80:http lc
 `-L` 還可搭配多個選項，例如 `--stats`，以顯示其他連接統計訊息。
 
 ### eBPF
+eBPF 是一個編程系統，它允許特殊的沙盒在內核中運行，而無需在內核(kernel)和用戶(User)空間之間來回傳遞，就像在 `Netfilter` 和 `iptables` 中看到的那樣。
+
+在 eBPF 之前，有 Berkeley Packet Filter (BPF)。BPF 是一種在內核中使用的技術，可用於分析網路流量。BPF 支援過濾封包，它允許用戶空間行程提供一個過濾器來指定它想要檢查的封包，BPF 的用例之一是 tcpdump。當在 tcpdump 上指定過濾行為時，它會將其編譯為 BPF 程式並將其傳遞給 BPF，BPF 中的技術已經擴展到其他行程和內核操作。
+
+
