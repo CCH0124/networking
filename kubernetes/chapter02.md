@@ -489,4 +489,30 @@ IPVS 支援封包轉發模式
 當有 5,000 個 `service`（40,000 條規則）時，添加一條規則所花費的時間為 11 分鐘。對於 20,000 個 `service`（160,000 條規則），需要 5 小時。
 
 ##### Latency
-訪問服務存在延遲，即路由延遲；每個封包必須遍歷 iptables 列表，直到匹配。添加/刪除規則存在延遲，從廣泛的列表中插入和刪除是一項大規模的密集操作。
+訪問服務存在延遲，即路由延遲；每個封包必須遍歷 iptables 列表，直到匹配。添加/刪除規則存在延遲，從廣泛的列表中插入和刪除是一項大規模的密集操作。 
+
+
+IPVS 還支持援 *session affinity*，它作為 `service` 物件中的一個選項 `Service.spec.sessionAffinity` 和 `Service.spec.sessionAffinityConfig`。在 *session affinity* 時間窗口內的重複連線將路由到同一主機，這對於最小化緩存未命中等場景很有用。
+
+要創建具有兩個相同權重目標的基本負載均衡器，可指定 `ipvsadm -A -t <address> -s <mode>`。`-A`、`-E` 和 `-D` 分別用於添加、編輯和刪除虛擬服務；對應的小寫字母 `-a`、`-e` 和 `-d` 分別用於添加、編輯和刪除主機後端。
+
+```bash
+ipvsadm -A -t 1.1.1.1:80 -s lc
+ipvsadm -a -t 1.1.1.1:80 -r 2.2.2.2 -m -w 100
+ipvsadm -a -t 1.1.1.1:80 -r 3.3.3.3 -m -w 100
+```
+
+可使用 `-L` 列出 IPVS 主機，顯示了每個虛擬服務器（唯一的 IP 地址和端口組合）和後端：
+```bash
+ipvsadm -L
+IP Virtual Server version 1.2.1 (size=4096)
+Prot LocalAddress:Port Scheduler Flags
+-> RemoteAddress:Port Forward Weight ActiveConn InActConn
+TCP 1.1.1.1.80:http lc
+-> 2.2.2.2:http Masq 100 0 0
+-> 3.3.3.3:http Masq 100 0 0
+```
+
+`-L` 還可搭配多個選項，例如 `--stats`，以顯示其他連接統計訊息。
+
+### eBPF
