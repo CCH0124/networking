@@ -565,3 +565,6 @@ eBPF 在 Kubernetes 中最常見的用途像是 Cilium、CNI 和一些服務實�
 |Checking HTTPS| OpenSSL, cURL|
 |Checking listening programs| netstat、ss|
 
+### ping
+ping 是一個將 ICMP `ECHO_REQUEST` 封包發送到網路設備的簡單應用程式。這是測試從一台主機到另一台主機的網路連接性的一種常見且簡單的方法。
+
