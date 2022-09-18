@@ -568,3 +568,87 @@ eBPF 在 Kubernetes 中最常見的用途像是 Cilium、CNI 和一些服務實�
 ### ping
 ping 是一個將 ICMP `ECHO_REQUEST` 封包發送到網路設備的簡單應用程式。這是測試從一台主機到另一台主機的網路連接性的一種常見且簡單的方法。
 
+Kubernetes `service` 物件支援 TCP 和 UDP，但沒有 ICMP。因此，需要使用 `telnet` 或 `cURL` 等更高級別的工具來檢查與服務的連通性。但根據網路的配置，POD 依就可以使用 ping 進行存取。
+
+ping 可以基本使用是 `ping <address>`，address 可以是 IP 或是域名。且，可以搭配 `-c <count>`，來指定觸發次數。
+
+```bash
+$ ping -c 2 k8s.io
+PING k8s.io (34.107.204.206) 56(84) bytes of data.
+64 bytes from 206.204.107.34.bc.googleusercontent.com (34.107.204.206): icmp_seq=1 ttl=53 time=53.6 ms
+64 bytes from 206.204.107.34.bc.googleusercontent.com (34.107.204.206): icmp_seq=2 ttl=53 time=40.6 ms
+
+--- k8s.io ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1002ms
+rtt min/avg/max/mdev = 40.622/47.103/53.585/6.481 ms
+```
+### traceroute
+traceroute 顯示從一台主機到另一台主機的網絡路由。這使用戶可以輕鬆驗證和調試從一台機器到另一台機器所採用的路由或路由失敗的地方。traceroute 發送具有特定 IP 生存時間值(RRL)的封包，當主機收到一個封包並將 TTL 減為 0 時，它會發送一個 `TIME_EXCEEDED` 封包並丟棄原始封包。
+
+### dig
+dig 是一個 DNS 查找工具。可以使用它進行 DNS 查詢並顯示結果。指令可以是 `dig [options] <domain>`。預設情況下，dig 將顯示 `CNAME`、`A` 和 `AAAA` 記錄。
+
+### telnet
+telnet 曾經用於遠端登錄，其方式類似於 SSH。SSH 具有更好的安全性而佔據主導地位，但 telnet 對於調試使用基於文本的協議的服務器仍然非常有用，像是 `HTTP/1`。使用方式會像是 `telnet <address> <port>`，這將建立連接並提供交互式命令行界面，最後可以用 `Ctrl-J` 離開介面。 
+
+要完整利用 telnet，需要了解使用的應用程式協定是如何工作的。telnet 是調試 `HTTP`、`HTTPS`、`POP3`、`IMAP` 等服務器的經典工具。
+
+### nmap
+nmap 是一個**端口掃描器**，它可以探索和檢查網路上的服務。基本使用方式 `nmap [options] <target>`，target 可以是域名、IP 或是 IP CIDR。
+
+### netstat
+netstat 可以顯示有關機器網路堆棧和連接的廣泛訊息，可以使用 `-a` 參數顯示所有連接或 -l 僅顯示在監聽的連接。netstat 的一個常見用途是檢查哪個行程正在偵聽特定端口。
+
+### netcat
+netcat 是一個多用途工具，用於建立連線、發送數據或偵聽套接字(socket)。當使用 `netcat <address> <port>` 時，netcat 可以連接到服務器，與 telnet 類似有個交互式的介面。
+
+### Openssl
+openssl 可以做一些事情，例如建立密鑰(key)和證書(certificates)、簽署證書(signing certificates)，以及最相關的測試 `TLS/SSL` 連接。
+
+使用通常是 `openssl [sub-command] [arguments] [options]`。`openssl s_client -connect` 將連接到服務器並顯示有關服務器證書的詳細訊息，同時也是默認調用：
+
+```bash
+$ openssl s_client -connect k8s.io:443
+CONNECTED(00000003)
+depth=2 C = US, O = Google Trust Services LLC, CN = GTS Root R1
+verify return:1
+depth=1 C = US, O = Google Trust Services LLC, CN = GTS CA 1D4
+verify return:1
+depth=0 CN = k8s.io
+verify return:1
+---
+Certificate chain
+ 0 s:CN = k8s.io
+   i:C = US, O = Google Trust Services LLC, CN = GTS CA 1D4
+ 1 s:C = US, O = Google Trust Services LLC, CN = GTS CA 1D4
+   i:C = US, O = Google Trust Services LLC, CN = GTS Root R1
+ 2 s:C = US, O = Google Trust Services LLC, CN = GTS Root R1
+   i:C = BE, O = GlobalSign nv-sa, OU = Root CA, CN = GlobalSign Root CA
+---
+Server certificate
+...
+```
+
+如果是使用的是自 self-signed CA，則可以使用 `-CAfile <path>` 來使用該 CA。這允許根據 self-signed CA 建立和驗證連接。
+
+### cURL
+cURL 是一種數據傳輸工具，支援多種協定，特別是 `HTTP` 和 `HTTPS`。基本使用是 `curl [options] <URL>`，預設是 GET 請求方法。
+```bash
+$ curl example.org
+<!doctype html>
+<html>
+<head>
+    <title>Example Domain</title>
+...    
+```
+
+預設是不能重新定向，但只要使用 `-L` 參數就可使用。`-X` 參數可以指定 HTTP 動詞，像是 `DELETE`、`POST`、`PUT` 等。帶參數方式可以使用 `-d` 參數，如下
+- URL encoded: `-d "key1=value1&key2=value2"`
+- JSON: `-d '{"key1":"value1", "key2":"value2"}'`
+- As a file in either format: `-d @data.txt`
+
+使用 `-H` 參數可添加 HTTP 標頭。
+
+cURL 有許多的附加功能，例如使用超時(timeouts)、自定義 CA 證書、自定義 DNS 等的能力。
+
+
