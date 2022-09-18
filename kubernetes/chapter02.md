@@ -533,3 +533,35 @@ eBPF 程式可以直接訪問 *syscall*。eBPF 可以直接監看和阻止*sysca
     - 數據和事件的定時採樣
 - **XDP**
     - 專門的 eBPF 程式可以低於內核空間以訪問驅動程序空間以直接作用於封包
+
+將 eBPF 與 Kubernetes 一起使用的原因有很多
+- **Performance (hashing table versus iptables list)**
+對於添加到 Kubernetes 的每個 `serviuce` 物件，要遍歷的 iptables 規則列表呈指數增長。因為缺少增量更新，每次添加新規則時都必須替換整個規則列表。
+
+- **Tracing**
+我們可以收集 pod 和容器級別的網路統計訊息。在 Linux 4.10 中引入的 cgroup-bpf 允許將 eBPF 程式附加到 cgroups。連接後，該程式將對進入或退出 cgroup 中任行程的所有數據包進行動作。
+
+- **Auditing kubectl exec with eBPF**
+使用 eBPF，可以附加一個程式，該程式將記錄在 `kubectl exec` 會話中執行的任何命令，並將這些命令傳遞給記錄這些事件的用戶空間程式。
+
+- **Security**
+    - **Seccomp**
+    限制允許的 `syscall` 的安全計算。 `Seccomp` 過濾器可以用 eBPF 編寫
+
+>Falco: Open source container-native runtime security that uses eBPF.
+
+eBPF 在 Kubernetes 中最常見的用途像是 Cilium、CNI 和一些服務實現。*Cilium 取代了 kube-proxy*，`kube-proxy` 透過編寫 iptables 規則將服務的 IP 地址映射到其對應的 Pod。
+
+*通過 eBPF，Cilium 可以直接在內核中攔截和路由所有封包，速度更快，並允許應用程式級（第 7 層）別負載平衡。*
+
+## Network Troubleshooting Tools
+
+| Case  | Tools |
+|---|---| 
+|Checking connectivity | traceroute, ping, telnet, netcat | 
+| Port scanning |  nmap | 
+|Checking DNS records| dig, commands mentioned in Checking Connectivity|
+|Checking HTTP/1| cURL, telnet, netcat|
+|Checking HTTPS| OpenSSL, cURL|
+|Checking listening programs| netstat、ss|
+
