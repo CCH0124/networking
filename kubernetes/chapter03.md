@@ -17,3 +17,10 @@ Hypervisor 模擬來自主機的硬體資源、CPU 和記憶體，以創建客�
 下圖為一個容器化應用程式的架構，每個容器都是*獨立*的；*每個應用程式，無須依賴底層的函式庫或者作業系統*；每個容器都有自己的網路堆棧。容器允許開發人員打包和部署應用程式，同時保持主機的效率。
 
 ![image](https://user-images.githubusercontent.com/17800738/191274871-9145ec33-3963-45b1-85a4-3673bb829fce.png)
+
+**Container** 一個被運行的 image
+**Image** 容器 image 是從倉庫服務器中拉下的檔案，並在啟動容器時在本地用作掛載點
+**Container engine** 透過該介面，接受使用者指令行選項請求以提取 image 並運行容器
+**Container runtime** 是 `Container engine` 中處理容器運行的更底層軟體
+**Base image** 容器 Image 的基礎。為了減少構建的大小和復雜性，使用者可以從基礎 Image 開始並在其之上進行增量更改
+**Image layer** 
