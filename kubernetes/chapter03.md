@@ -31,3 +31,18 @@ Hypervisor 模擬來自主機的硬體資源、CPU 和記憶體，以創建客�
 **Container host** 容是使用 `Container engine` 運行容器的系統
 **Container orchestration** 為 `Container host` 集群動態調度容器工作負載
 
+>Cgroups 和 namespaces 是用於創建容器的 Linux 基礎
+
+低層級容器運行(container runtime)功能
+- Creating containers
+- Running containers
+
+高層級容器運行(container runtime)功能
+- Formatting container images
+- Building container images
+- Managing container images
+- Managing instances of containers
+- Sharing container images
+
+
+
