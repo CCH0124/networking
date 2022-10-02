@@ -197,6 +197,84 @@ lrwxrwxrwx 1 root root 0 Oct  1 16:03 uts -> 'uts:[4026532190]'
 
 以下是建立網路命名空間、bridge 和 veth 對。並將它們連接在一起所需的流程
 
+`ip_forward` 是作業系統在一個網路接口上接受傳入網路封包、識別另一個接口並相應的將它們傳遞到該接口網路的能力。啟用後，`ip_forward` 允許 Linux 主機接收傳入的封包並轉發它們。充當普通主機的 Linux 機器不需要啟用 `ip_forward`，因為它會為其生成和接收 IP 流量。
+
 ```bash
 $ sudo su -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+$ sysctl net.ipv4.ip_forward
+net.ipv4.ip_forward = 1
 ```
+
+建立一個網路命名空間，預設環境下是沒有任何一個
+
+```bash
+$ sudo ip netns add net1
+$ sudo ip netns list
+net1
+```
+
+現在容器有了一個新的網路命名空間，但需要一個 `veth pair` 在根網路命名空間和容器網路命名空間 `net1` 之間進行通訊。
+
+```bash
+$ sudo ip link add veth0 type veth peer name veth1
+$ ip link list
+...
+6: veth1@veth0: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether d6:22:62:e1:01:28 brd ff:ff:ff:ff:ff:ff
+7: veth0@veth1: <BROADCAST,MULTICAST,M-DOWN> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 7e:96:a7:f5:ec:77 brd ff:ff:ff:ff:ff:ff
+```
+> veth 是成對出現的，它充當網路命名空間之間的管道，因此來自一端的封包會自動轉發到另一端
+> 網路接口 6 和 7 是 ip 指令輸出中的 veth 對。我們可以看到哪些是相互配對的，`veth1@veth0` 和 `veth0@veth1`
+
+將 `veth1` 移動到之前創建的新網路命名空間中，我們透過 `ip netns exec` 驗證配置，驗證 `veth1`
+
+```bash
+$ sudo ip link set veth1 netns net1
+$ sudo ip netns exec net1 ip link list
+1: lo: <LOOPBACK> mtu 65536 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+6: veth1@if7: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether d6:22:62:e1:01:28 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+```
+
+網路命名空間是 Linux 內核中完全獨立的 TCP/IP 堆棧。作為容器中一個新網路接口和一個新的網路命名空間，`veth` 網路接口需要 IP 地址，以便將封包從 `net1` 命名空間傳送到根命名空間並往主機外發送，但與主機網路接口一樣，它們需要被打開
+
+```bash
+$ sudo ip netns exec net1 ip addr add 192.168.1.101/24 dev veth1
+$ sudo ip netns exec net1 ip link set dev veth1 up
+$ sudo ip netns exec net1 ip link list veth1
+6: veth1@if7: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
+    link/ether d6:22:62:e1:01:28 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+```
+
+狀態現在已轉換為 `LOWERLAYERDOWN`。 `NO-CARRIER` 狀態指向的方向(The status NO-CARRIER points in
+the right direction.)，以太網路需要連接電纜(cable)，我們的上游 `veth pair` 也尚未啟動，但 `veth1` 網路接口已啟動並已被分配地址，但實際上仍未被啟用。
+
+接下來配置 `veth0 pair`
+```bash
+$ sudo ip link set dev veth0 up
+$ sudo ip link list
+...
+7: veth0@if6: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether 7e:96:a7:f5:ec:77 brd ff:ff:ff:ff:ff:ff link-netns net1
+$ sudo ip netns exec net1 ip link list veth1
+6: veth1@if7: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP mode DEFAULT group default qlen 1000
+    link/ether d6:22:62:e1:01:28 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+```
+
+`veth pair` 的雙方狀態都已 `UP`，我們需要將根命名空間 `veth` 端連接到 bridge 網路接口。
+
+```bash
+$ sudo ip link add br0 type bridge
+$ ip link list br0
+9: br0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
+    link/ether 3a:33:71:ac:28:a4 brd ff:ff:ff:ff:ff:ff
+$ sudo ip link set dev br0 up # dev 表示 Device
+
+.....
+$ sudo ip link set ens33 master br0
+$ sudo ip link set veth0 master br0
+$ sudo ip netns exec net1 ip route add default via 192.168.1.100
+```
+
