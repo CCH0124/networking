@@ -183,4 +183,20 @@ lrwxrwxrwx 1 root root 0 Oct  1 16:03 uts -> 'uts:[4026532190]'
 
 
 ### Setting Up Namespaces
+範例將會透過低層級的方式完成容器網路建置部分
+1. 建立根網路命名空間的主機
+2. 建立新網路命名空間
+3. 建立相對應的 `veth` 對
+4. 將 veth 對的一邊移動到新的網路命名空間中
+5. 新網路命名空間內 veth 對的地址設置
+6. 建立 bridge 網路介面卡
+7. bridge 網路介面卡設置
+8. bridge 網路介面卡附加至本機介面卡
+9. 將 veth 對的一邊連接到bridge 網路介面卡
+10. 完成
 
+以下是建立網路命名空間、bridge 和 veth 對。並將它們連接在一起所需的流程
+
+```bash
+$ sudo su -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+```
