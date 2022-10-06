@@ -278,3 +278,12 @@ $ sudo ip link set veth0 master br0
 $ sudo ip netns exec net1 ip route add default via 192.168.1.100
 ```
 
+
+### Container Network Basics
+
+*None*
+
+沒有網路會禁用容器的網路，當容器不需要網路訪問時使用此模式。
+
+*Bridge*
+
