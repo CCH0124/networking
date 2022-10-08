@@ -241,7 +241,7 @@ $ sudo ip netns exec net1 ip link list
 網路命名空間是 Linux 內核中完全獨立的 TCP/IP 堆棧。作為容器中一個新網路接口和一個新的網路命名空間，`veth` 網路接口需要 IP 地址，以便將封包從 `net1` 命名空間傳送到根命名空間並往主機外發送，但與主機網路接口一樣，它們需要被打開
 
 ```bash
-$ sudo ip netns exec net1 ip addr add 192.168.1.101/24 dev veth1
+$ sudo ip netns exec net1 ip addr add 192.168.133.150/24 dev veth1
 $ sudo ip netns exec net1 ip link set dev veth1 up
 $ sudo ip netns exec net1 ip link list veth1
 6: veth1@if7: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state LOWERLAYERDOWN mode DEFAULT group default qlen 1000
@@ -271,14 +271,27 @@ $ ip link list br0
 9: br0: <BROADCAST,MULTICAST> mtu 1500 qdisc noop state DOWN mode DEFAULT group default qlen 1000
     link/ether 3a:33:71:ac:28:a4 brd ff:ff:ff:ff:ff:ff
 $ sudo ip link set dev br0 up # dev 表示 Device
-
-.....
 $ sudo ip link set ens33 master br0
 $ sudo ip link set veth0 master br0
-$ sudo ip netns exec net1 ip route add default via 192.168.1.100
+
+```
+我們可以看到 ens33 和 veth0 是 bridge br0 網路街口的一部分，master br0 狀態是 `UP`。
+
+```bash
+$ ping 192.168.133.150 -c 4
+...
+From 192.168.133.140 icmp_seq=1 Destination Host Unreachable
+From 192.168.133.140 icmp_seq=2 Destination Host Unreachable
+...
 ```
 
+該新網路命名空間沒有默認路由，因此它不知道將我們的封包路由到哪裡來處理 ping 請求。
 
+```bash
+$ sudo ip netns exec net1 ip route add default via 192.168.133.150
+$ sudo ip netns exec net1 ip r
+192.168.133.0/24 dev veth1 proto kernel sacope link src 192.168.133.150
+```
 ### Container Network Basics
 
 *None*
