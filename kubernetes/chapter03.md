@@ -299,4 +299,140 @@ $ sudo ip netns exec net1 ip r
 沒有網路會禁用容器的網路，當容器不需要網路訪問時使用此模式。
 
 *Bridge*
+在橋接網路中，容器在主機內部的私有網路中運行，但與網路中其他容器的通訊是開放的。與主機外部服務的通訊在離開主機之前要經過網路地址轉換 (Network Address Translation, NAT)。
 
+>當未指定 --net 選項時，橋接模式是默認的網路模式
+
+*Host*
+在主機網路中，容器與主機共享相同的 IP 地址和網路命名空間。在此容器內運行的行程與直接在主機上運行的服務具有相同的網路功能。*如果容器需要訪問主機上的網路資源，此模式很有用*。容器在這種網路模式下*失去了網路分段的好處*，無論誰部署容器，都必須管理和應對運行該節點的*服務端口*。
+
+*Macvlan*
+Macvlan 使用父接口。該接口可以是主機接口（例如 eth0）、子接口(subinterface)，甚至可以是綁定主機適配器，將以太網接口捆綁到單個邏輯接口中。像所有 Docker 網路一樣，*Macvlan 網路是相互分割的，提供網路內的訪問，而不是網路之間的訪問*。Macvlan 允許物理接口使用 Macvlan 子接口擁有多個 MAC 和 IP 地址。Macvlan 有四種類型：`Private`、`VEPA`、`Bridge`（Docker 默認使用）和 `Passthrough`。使用網橋(Bridge)；使用 NAT 進行外部連接；使用 Macvlan 外部連接，由於主機直接映射到實體網路，因此可以使用主機的同一 DHCP 服務器和交換機完成。
+
+*IPvlan*
+IPvlan 與 Macvlan 類似，但有一個顯著區別：IPvlan 不會為建立的子接口分配 MAC 地址。*所有子接口共享父接口的 MAC 地址，但使用不同的 IP 地址*。IPvlan 有兩種模式，L2 或 L3。在 L2 中，模式類似於 Macvlan 橋接模式。 L3 模式偽裝成子接口和父接口之間的第 3 層(layer 3)設備。
+
+*Overlay*
+Overlay 允許在容器集群中的主機之間擴展相同的網路。Overlay 網路實際上位於 underlay/physical 網路之上。
+
+>overlay 的流量需要跑在 underlay 之上
+
+*Custom*
+自定義橋接網路與橋接網路相同，但使用為該容器明確的創建橋接。使用它的一個例子是在 DB 橋接網路上運行的容器，一個單獨的容器可以在默認和 DB 橋接上具有一個網路接口，使其能夠根據需要與兩個網路進行通訊。
+
+*容器定義的網路允許一個容器共享另一個容器的地址和網路配置*。這種共享實現了容器之間的行程隔離，每個容器運行一個服務，但服務仍然可以在 127.0.0.1 上相互通訊。
+
+當安裝玩 Docker 服務時，預設會建立下面三種類型網路，bridge、host 和 none
+```bash
+$ docker network ls
+NETWORK ID     NAME                  DRIVER    SCOPE
+ba341fad24df   bridge                bridge    local
+f35812c84422   host                  host      local
+69b247239876   none                  null      local
+...
+```
+
+預設是一個 Docker bridge(docker0)，一個容器被附加到它上面，並使用 `172.17.0.0/16` 默認子網中的 IP 地址進行配置。
+
+```bash
+$ ip add
+...
+10: docker0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc noqueue state DOWN group default
+    link/ether 02:42:34:02:36:b3 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+       valid_lft forever preferred_lft forever
+```
+
+下面使用 `docker run` 命令啟動了一個 `busybox` 容器，並請求 Docker 返回容器的 IP 地址。 Docker 預設的 NAT 地址是 `172.17.0.0/16`，該 busybox 容器獲取 `172.17.0.2` 地址。
+
+```bash
+$ docker run --rm -it busybox ip a
+Unable to find image 'busybox:latest' locally
+latest: Pulling from library/busybox
+f5b7ce95afea: Pull complete
+Digest: sha256:9810966b5f712084ea05bf28fc8ba2c8fb110baa2531a10e2da52c1efc504698
+Status: Downloaded newer image for busybox:latest
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: tunl0@NONE: <NOARP> mtu 1480 qdisc noop qlen 1000
+    link/ipip 0.0.0.0 brd 0.0.0.0
+3: sit0@NONE: <NOARP> mtu 1480 qdisc noop qlen 1000
+    link/sit 0.0.0.0 brd 0.0.0.0
+15: eth0@if16: <BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN> mtu 1500 qdisc noqueue
+    link/ether 02:42:ac:11:00:02 brd ff:ff:ff:ff:ff:ff
+    inet 172.17.0.2/16 brd 172.17.255.255 scope global eth0
+       valid_lft forever preferred_lft forever
+```
+
+在容器的網路命名空間中運行 `ip r`，可以看到容器的路由表也自動設置好了
+
+```bash
+$ docker run -it --rm busybox /bin/sh
+/ # ip r
+default via 172.17.0.1 dev eth0
+172.17.0.0/16 dev eth0 scope link  src 172.17.0.2
+```
+
+可以在同一主機的網路命名空間上看到 `Docker` 為容器 `veth63f314e@if15` 設置的 `veth` 接口。它是 `docker0` bridge 接口的成員，並且狀態是行的 `master docker0 state UP`
+
+```bash
+$ ip add
+...
+16: veth63f314e@if15: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master docker0 state UP group default
+    link/ether f2:bd:e3:9b:17:76 brd ff:ff:ff:ff:ff:ff link-netnsid 1
+    inet6 fe80::f0bd:e3ff:fe9b:1776/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+Ubuntu 主機的路由表顯示了 Docker 到達主機上運行的容器的路由
+```bash
+$ ip r
+default via 172.26.32.1 dev eth0
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1
+172.18.0.0/16 dev br-6488defa258e proto kernel scope link src 172.18.0.1 linkdown
+172.19.0.0/16 dev br-5874b1804224 proto kernel scope link src 172.19.0.1
+172.21.0.0/16 dev br-6d65fc981fcd proto kernel scope link src 172.21.0.1 linkdown
+172.26.32.0/20 dev eth0 proto kernel scope link src 172.26.33.250
+```
+
+*預設下，Docker 不會將它創建的網路命名空間添加到 `/var/run`其中 `p netns list` 要新創建的網路命名空間*。從 ip 命令列出 Docker 網路命名空間需要三個步驟：
+
+1. 獲取以運行的 container ID
+2. 將網路命名空間從 `/proc/PID/net/` 軟鏈(Soft link)接到 `/var/run/netns`
+3. 列出網路命名空間
+
+`docker ps` 可察看主機 PID 命名空間上正在運行的 PID 所需的容器 ID
+
+```bash
+$ docker ps
+CONTAINER ID   IMAGE      COMMAND                  CREATED         STATUS                  PORTS                                       NAMES
+8e9c64e97c1d   busybox    "/bin/sh"                2 minutes ago   Up 2 minutes                                                        fervent_greider
+```
+
+`docker inspect` 允許解析輸出並獲取主機進程的 PID。如果在主機 PID 命名空間上運行 `ps -p`，可以看到它正在運行 `sh`，它會同步 `docker run` 命令
+
+```bash
+$ docker inspect 8e9c64e97c1d -f '{{.State.Pid}}'
+5292
+$ ps -p 5292
+  PID TTY          TIME CMD
+ 5292 pts/0    00:00:00 sh
+```
+
+8e9c64e97c1d 是容器 ID，5292 是運行 sh 的 busybox 容器的 PID，現在可以使用以下命令為 Docker 創建的容器的網路命名空間創建一個符號鏈接到 ip 期望的位置
+
+```bash
+$ ln -sfT /proc/5292/ns/net /var/run/docker/netns/8e9c64e97c1d
+```
+
+當使用 `ip netns exec` 時返回與 `docker exec` 相同的 IP 地址 172.17.0.2
+
+```bash
+$ sudo ip netns exec  8e9c64e97c1d ip a
+```
+
+Docker 啟動我們的容器，創建 network namespace、veth pair 和 docker0 bridge（如果它不存在）。
+
+### Docker Networking Model
