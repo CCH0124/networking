@@ -436,3 +436,33 @@ $ sudo ip netns exec  8e9c64e97c1d ip a
 Docker 啟動我們的容器，創建 network namespace、veth pair 和 docker0 bridge（如果它不存在）。
 
 ### Docker Networking Model
+Libnetwork 是 Docker 對容器網路的看法，其設計理念是容器網路模型 (container networking model, CNM)。Libnetwork 實現 CNM 並在三個元件中工作，sandbox、endpoint 和 network。
+
+sandbox 實現了對主機上運行的所有容器的 Linux 網路命名空間的管理
+network 實現同一網路上的端點集合
+endpoint 是網路上的主機
+
+網路控制器透過 Docker engine 中的 API 管理這些所有。
+
+*在端點上，Docker 使用 iptables 進行網路隔離，容器發布一個可供外部訪問的端口*。容器也不接收公有 IPv4 地址，反而是接收私有地址。預設安裝完 Docker 服務後，會建立 `docker0` 橋接網路介面，它會在兩個連接的設備之間傳遞封包，就像物理網橋一樣。因此，*每個新容器都有一個接口自動連接到 docker0 橋接*。
+
+![](https://docs.docker.com/engine/tutorials/bridge1.png)
+
+以下是網路模式和 Docker engine 等效列表
+*Bridge*
+預設 Docker 橋接
+
+*Custom or Remote*
+用戶定義的橋接介面，或允許用戶創建或使用他們的插件
+
+*Overlay*
+Overlay
+
+*Null*
+沒有網路選項
+
+橋接網路適用於在同一主機上運行的容器；運行在不同主機上的容器通訊可以使用 overlay 網路。Docker 使用本地和全域驅動程式的概念，本地驅動程序（網橋）以主機為中心，不進行跨節點協調。其是 Overlay 等全域驅動程序的工作，全域驅動程式依賴於 libkv（一種鍵值儲存抽象）來跨機器進行協調。*CNM 不提供 key-value 存儲，因此需要 Consul、etcd 和 Zookeeper 等外部儲存*。
+
+### Overlay Networking
+對於運行在不同節點上的容器中的應用程式進行通訊，需要解決幾個問題，像是如何協調主機之間的路由訊息、端口衝突以及 IP 地址管理等。然而，`VXLAN` 是一種有助於容器主機之間路由的技術。
+
