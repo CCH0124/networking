@@ -449,16 +449,21 @@ endpoint 是網路上的主機
 ![](https://docs.docker.com/engine/tutorials/bridge1.png)
 
 以下是網路模式和 Docker engine 等效列表
+
 *Bridge*
+
 預設 Docker 橋接
 
 *Custom or Remote*
+
 用戶定義的橋接介面，或允許用戶創建或使用他們的插件
 
 *Overlay*
+
 Overlay
 
 *Null*
+
 沒有網路選項
 
 橋接網路適用於在同一主機上運行的容器；運行在不同主機上的容器通訊可以使用 overlay 網路。Docker 使用本地和全域驅動程式的概念，本地驅動程序（網橋）以主機為中心，不進行跨節點協調。其是 Overlay 等全域驅動程序的工作，全域驅動程式依賴於 libkv（一種鍵值儲存抽象）來跨機器進行協調。*CNM 不提供 key-value 存儲，因此需要 Consul、etcd 和 Zookeeper 等外部儲存*。
@@ -466,3 +471,13 @@ Overlay
 ### Overlay Networking
 對於運行在不同節點上的容器中的應用程式進行通訊，需要解決幾個問題，像是如何協調主機之間的路由訊息、端口衝突以及 IP 地址管理等。然而，`VXLAN` 是一種有助於容器主機之間路由的技術。
 
+![](https://img1.wsimg.com/isteam/ip/ada6c322-5e3c-4a32-af67-7ac2e8fbc7ba/7.jpg/:/cr=t:0%25,l:0%25,w:100%25,h:100%25/rs=w:1280)
+
+VXLAN 是 VLAN 協定的擴展，可創建 1600 萬個唯一標識符。在 IEEE 802.1Q 下，給定以太網網路上的最大 VLAN 數為 4094，物理數據中心網路上的傳輸協定是 IP 加 UDP。*VXLAN 定義了 MAC-in-UDP 封裝方式，其中原始第 2 層幀(Frame)具有添加的 VXLAN 標頭，該標頭包裝在 UDP IP 封包中*。
+
+在兩台主機上都有 VXLAN 隧道(tunnel)端點 VTEP，它們連接到主機的橋接網路接口，容器連接到該橋接網路接口，且 VTEP 執行數據幀的封裝和解封裝，對等交互確保數據被轉發到相關的目標容器地址。然而，離開容器的數據使用 VXLAN 進行封裝，並透過 VXLAN 隧道傳輸，由對等 VTEP 解封裝。
+
+*Overlay 網路支援容器在網路上的跨主機通訊*。對於 CNM 仍然存在其他問題，使其與 Kubernetes 不兼容，因此有了後續的 CNI 相關專案。
+
+### Container Network Interface
+CNI 是容器運行時和網路實現之間的軟體接口。CNI 透過在創建容器時分配資源並在刪除時刪除它們有關容器的網路連接。*CNI 也負責將網路接口與容器網路命名空間相關聯，並對主機進行任何必要的更改，然後它將 IP 分配給接口並為其設置路由*。容器運行時使用配置檔案來獲取主機的網路資訊，*在 Kubernetes 中，`Kubelet` 也使用這個配置檔案*。
