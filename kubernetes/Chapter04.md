@@ -29,3 +29,12 @@ spec:
     - containerPort: 8080
       protocol: TCP
 ```
+
+但通常會用更高層級元件去管理 POD，像是 `deployment`、`ReplicaSet`、`StatefulSet`。
+
+![image](https://user-images.githubusercontent.com/17800738/197341478-10dc731d-d987-42c1-b31e-a66dfa9f4091.png)
+
+POD 本身是短暫的，隨時會被刪除並替換新版本，當中本地硬碟狀態、節點調度和 IP 都將在 POD 的生命週期中定期更換。然而，POD 本身有一個唯一的 IP，它在 POD 中的所有容器共享，*主要動機是為了消除 Port 號限制*。
+
+一些案例可能無法正常運行在其客製 port，那可能需要 iptable 的 DNAT 協助。Kubernetes 選擇 IP per POD 模式是為了讓開發人員更容易採用並更容易運行第三方工作負載。不幸的是，為每個 POD 分配和路由一個 IP 會大大增加 Kubernetes 集群的複雜性。
+
