@@ -480,4 +480,22 @@ VXLAN 是 VLAN 協定的擴展，可創建 1600 萬個唯一標識符。在 IEEE
 *Overlay 網路支援容器在網路上的跨主機通訊*。對於 CNM 仍然存在其他問題，使其與 Kubernetes 不兼容，因此有了後續的 CNI 相關專案。
 
 ### Container Network Interface
-CNI 是容器運行時和網路實現之間的軟體接口。CNI 透過在創建容器時分配資源並在刪除時刪除它們有關容器的網路連接。*CNI 也負責將網路接口與容器網路命名空間相關聯，並對主機進行任何必要的更改，然後它將 IP 分配給接口並為其設置路由*。容器運行時使用配置檔案來獲取主機的網路資訊，*在 Kubernetes 中，`Kubelet` 也使用這個配置檔案*。
+CNI 是容器運行時和網路實現之間的軟體接口。CNI 透過在創建容器時分配資源並在刪除時刪除它們有關容器的網路連接。*CNI 也負責將網路接口與容器網路命名空間相關聯，並對主機進行任何必要的更改，然後它將 IP 分配給接口並為其設置路由*。容器運行時使用配置檔案來獲取主機的網路資訊，*在 Kubernetes 中，`Kubelet` 也使用這個配置檔案*。 CNI 和 container  runtime 相互通訊並將命令應用於配置的 CNI 插件。
+
+![image](https://user-images.githubusercontent.com/17800738/197329206-518b0d4f-1f3b-40ab-b9f6-f7133f13f1bb.png)
+
+CNI 插件，有多個開源專案實現它。
+
+*Cilium*
+
+ 在 L3-L7 上實現網路策略，Linux 技術 eBPF 為其提供方向
+ 
+ *Flannel*
+ 
+ *Calico*
+ 
+ *AWS*
+ 
+ ### Container Connectivity
+ 
+
