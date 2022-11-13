@@ -82,7 +82,10 @@ POD 本身是短暫的，隨時會被刪除並替換新版本，當中本地硬�
 
 #### Island Networks
 
+此模式是在高層次上是 isolate 和 flat 網路的結合。
 
+下圖，*節點與外部的網路具有 L3 連接，但 POD 沒有*，要進出 POD 的流量必須透過某種形式的代理。大多數情況下，這是*透過對離開節點的 POD 封包進行 iptables 來源 NAT 來實現的*，該過程可以稱做*masquerading*，使用 SNAT 將封包源(source)從 POD 的 IP 地址重寫為節點的 IP 地址，封包就來自節點，而非 POD。
 
+![image](https://user-images.githubusercontent.com/17800738/201515395-638ac6ce-0139-4a92-9fa7-89cc365df527.png)
 
 
