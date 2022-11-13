@@ -88,4 +88,13 @@ POD 本身是短暫的，隨時會被刪除並替換新版本，當中本地硬�
 
 ![image](https://user-images.githubusercontent.com/17800738/201515395-638ac6ce-0139-4a92-9fa7-89cc365df527.png)
 
+在使用 NAT 的同時共享 IP 地址會隱藏各個 POD IP 地址。這種基於 IP 地址的防火牆並識別跨集群邊界變得困難，但這有時是必須的。
+
+我們可藉由 `kube-controller-manager` 配置這些網路組態。控制平面是指確定使用哪個路徑來發送封包或幀(frame)的所有功能和過程。數據平面是指基於控制平面邏輯將封包或幀從一個接口轉發到另一個接口的所有功能和過程。
+
+>共享 IP 是指分配給網站或主機帳戶的 Internet 協定 (IP) 地址在多個域或網站之間共享。相反，專用 IP 是僅分配給一個域的 IP 地址。
+
+#### kube-controller-manager Configuration
+
+
 
