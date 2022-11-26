@@ -96,5 +96,66 @@ POD 本身是短暫的，隨時會被刪除並替換新版本，當中本地硬�
 
 #### kube-controller-manager Configuration
 
+`kube-controller-manager` 存在 Kubernetes 的邏輯。Kubernetes 中的控制器是*監視資源並採取行動以同步或強制執行特定狀態（所需狀態或將當前狀態反映為狀態）的軟體*。Kubernetes 有很多控制器，它們通常擁有特定的對像類型或特定的操作，像是網路堆棧，設定 CIDR。因此其運行了大量的控制器，同時也有大量的參數。
 
+下表為對網路的配置，版本 1.24
+|Flag|Default|Description| 
+|---|---|---|
+|--allocate-node-cidrs|true|設置是否應在雲商上分配和設置 Pod 的 CIDR|
+|--cidr-allocator-type|RangeAllocator|要使用的 CIDR 分配器的類型|
+|--cluster-CIDR| |從中分配 pod IP 地址的 CIDR 範圍。需搭配 --allocate-node-cidrs 且為 true|
+|--configure-cloud-routes|true|設置 CIDR 是否由 `allocate-node-cidrs` 分配並在雲商上配置|
+|--node-cidr-mask-size|24(IPv4)、64(IPv6)|集群中節點 CIDR 的遮罩大小。Kubernetes 會為每個節點分配 `2^(node-CIDR-mask-size)` 個 IP 地址。|
+|--node-cidr-mask-size-ipv4|24| |
+|--node-cidr-mask-size-ipv6|64| |
+|--service-cluster-ip-range| |集群中服務的 CIDR 範圍，用於分配服務 ClusterIP。需要 `--allocate-node-cidrs` 為 true。如果 `kube-controller-manager` 啟用了 `IPv6DualStack`，`--service-cluster-ip-range` 接受以逗號分隔的 IPv4 和 IPv6 CIDR。|
+
+>更多配置可參考 [document v1.24](https://v1-24.docs.kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
+
+#### Kubelet
+`Kubelet` 在 Kubernetes 集群中會被分配到每個工作節點上。*`Kubelet` 負責管理任何調度到節點的 POD，並為節點和節點上的 POD 提供狀態更新*。但，*Kubelet 主要充當節點上其他軟體的協調器*，管理容器網路透過 `CNI` 和容器運行時透過 `CRI`。
+
+>工作節點定義為可以運行 POD 的 Kubernetes 節點。
+
+當控制器或使用者在 Kubernetes API 中創建 POD 時，它最初僅作為 POD API 物件存在。Kubernetes 調度監視該 POD，並嘗試選擇一個有效的節點將 POD 調度到那。該調度有幾個限制，我們的 POD 及其 CPU/Memory 請求不得超過節點上剩餘的未請求 CPU/Memory。調度方式有許多選擇可用，例如 `affinity`、`anti-affinity`、`taints` 等。
+
+假設調度找到一個滿足所有 POD 約束的節點，調度應用程式將該節點的名稱寫入我們 POD 的 `nodeName` 字段。
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: "2022-08-06T03:13:27Z"
+  labels:
+    run: mycurlpod
+  name: mycurlpod
+  namespace: default
+  resourceVersion: "122811"
+  uid: aebb8e2f-f43c-431e-8481-6f518f0f5fe3
+spec:
+  containers:
+  - args:
+    - sh
+    image: curlimages/curl
+    imagePullPolicy: Always
+    name: mycurlpod
+    ....
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: kube-api-access-8kh95
+      readOnly: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  nodeName: skaffold-node1
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+...
+```
+
+而 Kubelet 監控所有調度給他的 POD。等效的 `kubectl get pods -w --field-selector spec.nodeName=skaffold-node1`。當 Kubelet 觀察到我們的 POD 存在但不存在於節點上時，它會創建它。會觸發 CRI 細節和容器本身的創建。一旦容器存在，Kubelet 就會對 CNI 進行 ADD 調用，這會告訴 CNI 插件創建 POD 網路。
+
+可以簡易得知建立 POD 流程 `Kubelet -> CRI -> CNI -> POD`。
+
+#### Pod Readiness and Probes
 
