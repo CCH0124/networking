@@ -158,4 +158,6 @@ spec:
 可以簡易得知建立 POD 流程 `Kubelet -> CRI -> CNI -> POD`。
 
 #### Pod Readiness and Probes
+POD `readiness` 是 POD 是否準備好為流量提供服務，該情況決定了 POD IP 是否顯示在來自外部源的 `Endpoints` 物件中。Deployment 是管理 POD 的資源，當在做滾動更新時會同時考慮 `readiness` 狀態。
 
+探測影響 POD 的 `.Status.Phase` 字段。
