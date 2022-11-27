@@ -160,4 +160,24 @@ spec:
 #### Pod Readiness and Probes
 POD `readiness` 是 POD 是否準備好為流量提供服務，該情況決定了 POD IP 是否顯示在來自外部源的 `Endpoints` 物件中。Deployment 是管理 POD 的資源，當在做滾動更新時會同時考慮 `readiness` 狀態。
 
-探測影響 POD 的 `.Status.Phase` 字段。
+探測影響 POD 的 `.Status.Phase` 字段。下面列出該字段的值和描述
+
+*Pending*
+
+POD 已被集群接受，但一個或多個容器尚未準備好運行。這包括 POD 等待調度所花費的時間以及透過網路下載容器 Image 所花費的時間。
+
+*Running*
+
+POD 已經被調度到一個節點上，並且所有的容器都已經創建好了。至少有一個容器仍在運行或正在啟動或重新啟動，但某些容器可能處於失敗狀態，例如處於 `CrashLoopBackoff` 狀態。
+
+*Succeeded*
+
+POD 中的所有容器都已成功終止，不會重新啟動
+
+*Failed*
+
+POD 中的所有容器都已終止，且至少有一個容器因故障而終止。也就是說，容器要嘛非零狀態退出，要嘛被系統終止。
+
+*Unknown*
+
+由於某種原因，無法確定 POD 的狀態。此*階段通常是由於與運行 POD 的 Kubelet 通訊時出現錯誤而發生的*。
