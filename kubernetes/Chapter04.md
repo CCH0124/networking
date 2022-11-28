@@ -181,3 +181,57 @@ POD 中的所有容器都已終止，且至少有一個容器因故障而終止�
 *Unknown*
 
 由於某種原因，無法確定 POD 的狀態。此*階段通常是由於與運行 POD 的 Kubelet 通訊時出現錯誤而發生的*。
+
+`Kubelet` 對 `POD` 中的各個容器執行多種類型的健康檢查：
+- liveness probes (livenessProbe)
+- readiness probes (readinessProbe)
+- startup probes (startupProbe)
+- 
+*Kubelet 以及節點本身必須能夠連接到該節點上運行的所有容器*，以便執行任何 HTTP 健康檢查。
+
+每個探測具有以下三個結果之一
+*Success*
+
+容器通過診斷
+
+*Failure*
+
+容器未通過診斷
+
+*Unknown*
+
+診斷失敗，所以不應採取任何措施
+
+探測可以是 `exec`探測，它嘗試 TCP 或 HTTP 探測並在容器中執行二進製文件。假設探測失敗次數超過 `failureThreshold` 次數，Kubernetes 將認為失敗。
+
+當容器的就緒探測(readiness prob)失敗時，Kubelet 不會終止它。相反，Kubelet 將故障寫入 POD 的狀態；如果活性探測(liveness prob)失敗，Kubelet 將終止容器，該探針通常會讓 kubelet 知道容器何時重啟。
+
+Kubernetes 具有容器重啟回退 (CrashLoopBackoff)，這會增加重啟失敗容器的延遲，此時後可能會遺失快取的內容風險。
+
+當 pod 使用它們時，它們只依賴於它們正在測試的容器，沒有其他依賴性。
+
+啟動探測(startup probe)可以在活性探測(liveness prob)生效之前提供一個寬限期，在啟動探測成功之前，活性探測不會終止容器。
+
+下面是 spring boot 範例
+```yaml
+....
+  spec:
+      containers:
+       ...
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            failureThreshold: 3
+```
+
+`Endpoints/EndpointsSlice` 資源也會對失敗的就緒探測(readiness probes)做出反應。*如果 POD 的就緒探測失敗，則 POD 的 IP 地址將不在端點對像中，服務也不會將流量路由到它*。
