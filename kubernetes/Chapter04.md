@@ -235,3 +235,40 @@ Kubernetes 具有容器重啟回退 (CrashLoopBackoff)，這會增加重啟失�
 ```
 
 `Endpoints/EndpointsSlice` 資源也會對失敗的就緒探測(readiness probes)做出反應。*如果 POD 的就緒探測失敗，則 POD 的 IP 地址將不在端點對像中，服務也不會將流量路由到它*。
+
+*`startupProbe` 探針會通知 Kubelet 容器內的應用程式是否啟動*，預設不設定是 `success` 狀態，該探針也優先於其它探針。一旦 `startupProbe` 成功，Kubelet 將開始運行其他探針。但*如果 `startupProbe` 失敗，Kubelet 會殺死容器，容器會執行其重啟策略*。
+
+探針可配置選項:
+
+*initialDelaySeconds*
+
+容器啟動後到啟動 liveness 或 readiness 探針之前的秒數。默認0；最小 0。
+
+*periodSeconds*
+
+執行探針的頻率。默認 10；最少 1 秒。
+
+*timeoutSeconds*
+
+探針超時後等待秒數。默認 1；最少 1 秒。
+
+*successThreshold*
+
+失敗後探針成功的最小連續成功數。默認 1；對於 liveness 和 startup 探測必須為 1；最少 1 次。
+
+*failureThreshold*
+
+當探針失敗時，Kubernetes 會在放棄之前嘗試多次。在 liveness 探針的情況下放棄表示著容器將重新啟動。對於 readiness 探測，POD 將被標記為未就緒。默認 3；最少 1 次。
+
+
+Kubelet 必須能夠連接到 Kubernetes API 服務。在下圖中，我們可以看到集群中所有組件建立的所有連接：
+- CNI
+  - Kubelet 中的網路插件，使網路能夠獲取 PODd 和 service 的 IP
+- gRPC
+  - 從 API 服務到 etcd 通訊的 API
+- Kubelet
+  -  所有 Kubernetes 節點都有一個 Kubelet，可確保分配給它的任何 POD 都在運行並以所需狀態配置
+-  CRI
+  -  允許 Kubelet 使用 gRPC API 與容器運行(container runtime)對話。容器運行供應商必須整合 CRI API，以允許 Kubelet 使用 OCI 標準 (runC) 與容器對話。 
+
+#### The CNI Specification
