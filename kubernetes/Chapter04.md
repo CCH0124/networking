@@ -269,6 +269,36 @@ Kubelet 必須能夠連接到 Kubernetes API 服務。在下圖中，我們可�
 - Kubelet
   -  所有 Kubernetes 節點都有一個 Kubelet，可確保分配給它的任何 POD 都在運行並以所需狀態配置
 -  CRI
-  -  允許 Kubelet 使用 gRPC API 與容器運行(container runtime)對話。容器運行供應商必須整合 CRI API，以允許 Kubelet 使用 OCI 標準 (runC) 與容器對話。 
+  - 允許 Kubelet 使用 gRPC API 與容器運行(container runtime)對話。容器運行供應商必須整合 CRI API，以允許 Kubelet 使用 OCI 標準 (runC) 與容器對話。 
 
 #### The CNI Specification
+根據規範，CNI 插件必須支援四種操作
+
+*ADD*
+
+將容器添加到網路
+
+*DEL*
+
+從網路中刪除容器位置
+
+*CHECK*
+
+如果容器的網路出現問題，返回錯誤
+
+*VERSION*
+
+報告有關插件的版本資訊
+
+> 更多 CNI 規範可參考該[鏈結](https://github.com/containernetworking/cni/blob/main/SPEC.md)
+
+
+Kubernetes 將 JSON 格式的命令任何配置提供給標準輸入，並透過標準輸出以 JSON 格式接收命令的輸出。CNI 插件充當 Kubernetes 調用的包裝器，而二進製檔案對後端進行 HTTP 或 RPC API 調用。
+
+![image](https://user-images.githubusercontent.com/17800738/205480315-3139fbc1-607b-4c85-85c6-c1f1636d960d.png)
+
+
+*Kubernetes 一次只使用一個 CNI 插件*，儘管 CNI 規範允許多插件設置，為一個容器分配多個 IP 地址。而，Multus 是一個 CNI 插件，它充當多個 CNI 插件的出口出來解決 Kubernetes 中的這個限制。
+
+#### CNI Plugins
+CNI 插件有兩個責任，為 POD 分配唯一的 IP 地址，並確保 Kubernetes 中存在到每個 pod IP 地址的路由。
