@@ -112,7 +112,7 @@ POD 本身是短暫的，隨時會被刪除並替換新版本，當中本地硬�
 
 >更多配置可參考 [document v1.24](https://v1-24.docs.kubernetes.io/docs/reference/command-line-tools-reference/kube-controller-manager/)
 
-#### Kubelet
+## Kubelet
 `Kubelet` 在 Kubernetes 集群中會被分配到每個工作節點上。*`Kubelet` 負責管理任何調度到節點的 POD，並為節點和節點上的 POD 提供狀態更新*。但，*Kubelet 主要充當節點上其他軟體的協調器*，管理容器網路透過 `CNI` 和容器運行時透過 `CRI`。
 
 >工作節點定義為可以運行 POD 的 Kubernetes 節點。
@@ -157,7 +157,7 @@ spec:
 
 可以簡易得知建立 POD 流程 `Kubelet -> CRI -> CNI -> POD`。
 
-#### Pod Readiness and Probes
+## Pod Readiness and Probes
 POD `readiness` 是 POD 是否準備好為流量提供服務，該情況決定了 POD IP 是否顯示在來自外部源的 `Endpoints` 物件中。Deployment 是管理 POD 的資源，當在做滾動更新時會同時考慮 `readiness` 狀態。
 
 探測影響 POD 的 `.Status.Phase` 字段。下面列出該字段的值和描述
@@ -300,5 +300,19 @@ Kubernetes 將 JSON 格式的命令任何配置提供給標準輸入，並透過
 
 *Kubernetes 一次只使用一個 CNI 插件*，儘管 CNI 規範允許多插件設置，為一個容器分配多個 IP 地址。而，Multus 是一個 CNI 插件，它充當多個 CNI 插件的出口出來解決 Kubernetes 中的這個限制。
 
-#### CNI Plugins
-CNI 插件有兩個責任，為 POD 分配唯一的 IP 地址，並確保 Kubernetes 中存在到每個 pod IP 地址的路由。
+## CNI Plugins
+
+CNI 插件有兩個責任，為 POD 分配唯一的 IP 地址，並確保 Kubernetes 中存在到每個 pod IP 地址的路由。這些職責表示著集群所在的總體網路決定了 CNI 插件的行為。
+
+要使用 CNI，須*將 `--network-plugin=cni` 添加到 Kubelet 的啟動參數中*。預設，*Kubelet 從目錄 `/etc/cni/net.d/` 中讀取 CNI 配置，並期望在 `/opt/cni/bin/` 中找到 CNI 執行檔*。管理員可以使用 `--cni-config-dir=<directory>` 覆蓋配置位置，使用 `-cni-bin-dir=<directory>` 覆蓋 CNI 執行檔目錄。
+
+[network-plugins](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/)
+
+>在 Kubernetes 1.24 之前，CNI 插件也可以由 kubelet 使用命令行參數 cni-bin-dir 和 network-plugin 管理。 Kubernetes 1.24 移除了這些命令行參數， CNI 的管理不再是 kubelet 的工作。
+
+CNI 網路模型有兩大類：平面網路(flat networks)和覆蓋網路(overlay networks)。在平面網路中，CNI 驅動程式使用來自集群網路的 IP 地址，這通常需要許多 IP 地址才能用於集群。在覆蓋網路中，CNI 驅動程式在 Kubernetes 中創建一個次要網路，它使用集群的網路（underlay network）發送封包。覆蓋網路在集群內創建一個虛擬網路，在其中，CNI 插件封裝封包。
+
+CNI 還負責調用 IPAM 進行 IP 分配。
+
+### The IPAM Interface
+CNI 規範有第二個，即 IP Address Management (IPAM) 接口，以減少 CNI 插件中 IP 分配的重複。IPAM 必須確定並IP 地址、網關和路由，如下所示。IPAM 類似於 CNI，一個二進製檔案，帶有 JSON 輸入(stdin) 和 JSON 輸出(stdout)
