@@ -316,3 +316,7 @@ CNI 還負責調用 IPAM 進行 IP 分配。
 
 ### The IPAM Interface
 CNI 規範有第二個，即 IP Address Management (IPAM) 接口，以減少 CNI 插件中 IP 分配的重複。IPAM 必須確定並IP 地址、網關和路由，如下所示。IPAM 類似於 CNI，一個二進製檔案，帶有 JSON 輸入(stdin) 和 JSON 輸出(stdout)
+
+[可參考](https://github.com/containernetworking/cni/blob/main/SPEC.md#section-4-plugin-delegation)
+
+
