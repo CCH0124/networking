@@ -319,4 +319,45 @@ CNI 規範有第二個，即 IP Address Management (IPAM) 接口，以減少 CNI
 
 [可參考](https://github.com/containernetworking/cni/blob/main/SPEC.md#section-4-plugin-delegation)
 
+##  CNI Plugins
+### Cilium
+
+##### Agent
+
+運行在每個節點上，此 cilium-agent 透過 Kubernetes API 接受這些需求，有網路、服務負載均衡、網路政政策(NetworkPolicy)以及可見性和監控。
+
+##### Client
+
+是一個 CLI 工具，會與 cilium-agent 再一起。且與同一節點上的 REST API 交互，檢測當前 cilium-agent 狀態或是存取 eBPF 映射以直接驗證其狀態。
+
+##### Operator
+
+負責管理集群
+
+##### CNI Plugin
+
+CNI 插件 (cilium-cni) 與節點的 Cilium API 交互以觸發配置以提供網路、負載均衡和網路政策(NetworkPolicy)。
+
+
+### kube-proxy
+kube-proxy 是 Kubernetes 中基於節點的守護進程。在集群中提供附載均衡功能，它實現服務(Service)並依賴於 `Endpoints/EndpointSlices`。
+- Service 為一組 pod 定義負載均衡
+- Endpoint 和 EndpointSlice 列出了就緒的 POD IP。它們是從 Service 自動創建，使用與 Service 相同的 pod。
+
+大多數類型服務(Service)都有一個 IP 地址，稱為 `cluster IP`，它在集群外是不可被路由的。`kube-proxy` 負責將對服務集群 IP 地址的請求路由到健康的 POD。
+
+kube-proxy 有四種模式，它們改變了它的運行時模式
+- userspace
+- iptables
+- ipvs
+- kernelspace
+
+`--proxy-mode <mode>` 可以指定，但*所有模式都在一定程度上依賴於 iptables*。
+
+#### userspace Mode
+最舊的模式，kube-proxy 運行一個 Web 服務器，並使用 iptables 將所有服務 IP 地址路由到 Web 服務器。Web 服務器終止連接並將請求代理到服務端點中的 POD。此模式不建議使用。
+
+#### iptables Mode
+
+
 
