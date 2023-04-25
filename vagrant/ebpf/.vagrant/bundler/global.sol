@@ -1,0 +1,1 @@
+{"dependencies":[["rake",[">= 0"]],["virtualbox_WSL2",["= 0.1.3"]]],"checksum":"fcb90b108ed39efe4495fd30c4dadbb11e1d62f5e2cfde2ae00cc9584deeffc0","vagrant_version":"2.3.4"}
