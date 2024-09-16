@@ -1,19 +1,19 @@
-##### What is the difference between a host and an end system? List several different types of end systems. Is a Web server an end system?
+##### 1. What is the difference between a host and an end system? List several different types of end systems. Is a Web server an end system?
 
 - 沒有不同，所有設備都可被稱為端系統(end system)或主機(host)
 - 個人電腦、服務器、手機等等
 - Web 服務器是端系統
 
-##### The word protocol is often used to describe diplomatic relations. How does Wikipedia describe diplomatic protocol?
+##### 2. The word protocol is often used to describe diplomatic relations. How does Wikipedia describe diplomatic protocol?
 - 是指在網路上一種可以彼此溝通的模式，雙方都要依照某些規則進行溝通
 - 定義了在兩個或多個通訊實體之間交換的訊息的格式和順序，以及訊息發送和接收一條訊息或其他事件所採取的動作
 - [wiki](https://en.wikipedia.org/wiki/Communication_protocol)
 
-##### Why are standards important for protocols?
+##### 3. Why are standards important for protocols?
 - 協定控制 internet 中訊息的接收和發送
 - 每個人就各個協定及其作用取得一至認識是很重要的，這樣人們就能夠創造協同工作的系統產品
 
-##### List six access technologies. Classify each one as home access, enterprise access, or widearea wireless access.
+##### 4. List six access technologies. Classify each one as home access, enterprise access, or widearea wireless access.
 - home access
     - DSL
     - 電纜
@@ -30,7 +30,7 @@
     - LTE
     - 5G
 
-#####  Is HFC transmission rate dedicated or shared among users? Are collisions possible in a downstream HFC channel? Why or why not?
+#####  5. Is HFC transmission rate dedicated or shared among users? Are collisions possible in a downstream HFC channel? Why or why not?
 - DSL 利用電話公司現有的本地電話設施，而**cable Internet access**利用有線電視基礎設施
 - HFC（Hybrid Fiber Coax），光纖和同軸電纜的混合
     - 同軸電纜為共享媒體(share medium)
@@ -39,19 +39,19 @@
     - 在下行 HFC 通道中，所有的數據包都是從一個來源發出的，即頭端，因此下由通道沒有碰撞。
 
 
-##### List the available residential access technologies in your city. For each type of access, provide the advertised downstream rate, upstream rate, and monthly price.
+##### 6. List the available residential access technologies in your city. For each type of access, provide the advertised downstream rate, upstream rate, and monthly price.
 - N/A
 
-#####  What is the transmission rate of Ethernet LANs?
+##### 7. What is the transmission rate of Ethernet LANs?
 - 10 Mbps, 100 Mbps, 1 Gbps and 10 Gbps
 
-#####  What are some of the physical media that Ethernet can run over?
+##### 8. What are some of the physical media that Ethernet can run over?
 - 雙絞線
 - 光纖
 - 粗同軸鏈覽
 
 
-##### Dial-up modems, HFC, DSL and FTTH are all used for residential access. For each of these access technologies, provide a range of transmission rates and comment on whether the transmission rate is shared or dedicated.
+##### 9. Dial-up modems, HFC, DSL and FTTH are all used for residential access. For each of these access technologies, provide a range of transmission rates and comment on whether the transmission rate is shared or dedicated.
 
 |Home access|傳輸速率|共享或專用|
 |---|---|---|
@@ -60,21 +60,21 @@
 |DSL|下行：24Mbps，上行：2.5Mbps|專用|
 |FTTH|100Mbps|共享|
 
-##### Describe the most popular wireless Internet access technologies today. Compare and contrast them.
+##### 10. Describe the most popular wireless Internet access technologies today. Compare and contrast them.
 
 - WiFi
     - 用戶在幾十米的半徑範圍內向/從基站（即無線接入點）發送/接收數據包。 基站通常連接到有線 Internet，因此用於將無線用戶連接到有線網絡
 - 3G and 4G
     - 封包是在用於蜂窩電話的相同無線基礎結構上傳輸，基地台由電信提供商管理
         - 這為基站半徑幾十公里內的用戶提供了無線訪問
-
-#####  Suppose there is exactly one packet switch between a sending host and a receiving host. The transmission rates between the sending host and the switch and between the switch and the receiving host are R and R , respectively. Assuming that the switch uses store-and-forward packet switching, what is the total end-to-end delay to send a packet of length L? (Ignore queuing, propagation delay, and processing delay.)
+- 5G
+##### 11. Suppose there is exactly one packet switch between a sending host and a receiving host. The transmission rates between the sending host and the switch and between the switch and the receiving host are R and R , respectively. Assuming that the switch uses store-and-forward packet switching, what is the total end-to-end delay to send a packet of length L? (Ignore queuing, propagation delay, and processing delay.)
 - 某元端系統或封包交換器經一條鏈路封發送一個 $L$ bit的封包，鏈路傳輸速率為 $R$ bit/s，則傳輸該封包的時間為 $L/R$ 秒
 
 
 在 $t_0$ 時間，發送端開始傳輸，因為忽略傳播延遲，當 $t_1 = L/R_1$，交換器接收到整個封包，並開始傳輸封包到接收端，當 $t_2 = t_1 + L/R_2$，接收端接收到整個封包，因此總端到端延遲為 $L/R_1+L/R_2$。
 
-##### What advantage does a circuit-switched network have over a packet-switched network? What advantages does TDM have over FDM in a circuit-switched network?
+##### 12. What advantage does a circuit-switched network have over a packet-switched network? What advantages does TDM have over FDM in a circuit-switched network?
 - 電路交換(circuit-switched) 可以在通訊會話期間保證一定量的端到端頻寬，當今大多數 packet-switched 無法對頻寬進行任何端到端保證
 - 頻分複用（FDM）需要復雜的模擬硬體才能將信號移入適當的頻帶，而時分複用（TDM）不需要
     - FDM 
@@ -83,7 +83,7 @@
 
 ![](https://i.imgur.com/foIu47m.png)
 
-##### Suppose users share a 2 Mbps link. Also suppose each user transmits continuously at 1 Mbps when transmitting, but each user transmits only 20 percent of the time.
+##### 13. Suppose users share a 2 Mbps link. Also suppose each user transmits continuously at 1 Mbps when transmitting, but each user transmits only 20 percent of the time.
 
 - a. When circuit switching is used, how many users can be supported?
     - 兩個用戶，一人占 1 Mbps
@@ -91,20 +91,20 @@
     - 由於每個用戶在傳輸時需要1Mbps，因此，如果兩個或更少的用戶同時傳輸，則最多需要2Mbps 因此在鏈接之前不會有排隊延遲
     - 個用戶同時進行傳輸，則所需頻寬將為 3Mbps，比可用頻寬更大，因此鏈接之前會有排隊延遲
 - c. Find the probability that a given user is transmitting.
-    - 0.2
+    - 每個使用者傳輸的概率為 20%，因此一個給定使用者正在傳輸的機率為 0.2。
 - d. Suppose now there are three users. Find the probability that at any given time, all three users are transmitting simultaneously. Find the fraction of time during which the queue grows.
     - $\begin{pmatrix} 0  \\ 0 \end{pmatrix} p^3(1-p)^{3-3} = 0.2^3 = 0.008$
-    - 隊列增長的時間比例為0.008，等於所有三個用戶同時在傳輸的概率
+    - 隊列增長的時間比例為0.008(0.2*0.2*0.2)，等於所有三個用戶同時在傳輸的概率
 
-#####  Why will two ISPs at the same level of the hierarchy often peer with each other? How does an IXP earn money?
+##### 14. Why will two ISPs at the same level of the hierarchy often peer with each other? How does an IXP earn money?
 - 如果兩個ISP不相互對等，則當它們彼此發送流量時，它們必須通過提供商ISP（中間商）發送流量，而他們必須為攜帶流量付費。 通過直接相互對等，兩個ISP可以減少向其提供商ISP的付款。 Internet交換點（IXP）（通常在具有自己的交換機的獨立建築物中）是多個ISP可以連接和/或對等連接的匯合點。 ISP通過向連接到IXP的每個ISP收取相對較小的費用來賺錢，這可能取決於發送給IXP或從IXP接收的流量。
     - IPX 是匯合點，多個 ISP 在此對等
 
-##### Some content providers have created their own networks. Describe Google’s network. What motivates content providers to create these networks?
+##### 15. Some content providers have created their own networks. Describe Google’s network. What motivates content providers to create these networks?
 
 Google 的專用網路將其所有大小數據中心連接在一起。Google 數據中心之間的流量透過其專用網路而不是公共 Internet 傳遞。這些數據中心中有許多位於或靠近較低層的 ISP。因此，當 Google 向用戶交付內容時，它通常可以繞過更高級別的 ISP。是什麼促使內容提供商創建這些網路？首先，由於內容提供商只需使用很少的中間 ISP，因此可以更好地控制用戶體驗。 其次，它可以通過向提供商網路發送更少的流量來節省資金。第三，如果 ISP 決定向高利潤的內容提供商收取更多的錢，則內容提供商可以避免這些額外的付款。
 
-##### Consider sending a packet from a source host to a destination host over a fixed route. List the delay components in the end-to-end delay. Which of these delays are constant and which are variable?
+##### 16. Consider sending a packet from a source host to a destination host over a fixed route. List the delay components in the end-to-end delay. Which of these delays are constant and which are variable?
 - 延遲成份
     - 處理延遲
     - 傳輸延遲
@@ -116,8 +116,46 @@ Google 的專用網路將其所有大小數據中心連接在一起。Google 數
 
 ![](https://i.imgur.com/q44iu83.png)
 
-#####  Visit the Transmission Versus Propagation Delay applet at the companion Web site. Among the rates, propagation delay, and packet sizes available, find a combination for which the sender finishes transmitting before the first bit of the packet reaches the receiver. Find another combination for which the first bit of the packet reaches the receiver before the sender finishes transmitting.
+##### 17. Visit the Transmission Versus Propagation Delay applet at the companion Web site. Among the rates, propagation delay, and packet sizes available, find a combination for which the sender finishes transmitting before the first bit of the packet reaches the receiver. Find another combination for which the first bit of the packet reaches the receiver before the sender finishes transmitting.
 - [網站](https://media.pearsoncmg.com/aw/ecs_kurose_compnetwork_7/cw/content/interactiveanimations/transmission-vs-propogation-delay/transmission-propagation-delay-ch1/index.html)
+
+- 傳輸延遲 
+    - 取決於封包長度與傳輸(鏈路)速率
+    - $L/R$
+- 傳播延遲 
+    - 取決於物理媒介和路由器距離
+    - $d/s$
+
+傳輸快於傳播，選擇較大的封包大小和較高的傳輸速率。這樣會讓傳輸時間相對較長
+
+s = Propagation speed = $2.8*10^8 m/s$
+
+L = Packet length = $100  Bytes$
+
+d = link length= $10 km$
+
+R = Transmission rate(bps) = $100 Mbps$
+
+傳播快於傳輸，選擇較小的封包大小和較低的傳輸速率。這樣會讓傳輸時間相對較短。
+
+s = Propagation speed = $2.8*10^8 m/s$
+
+L = Packet length = $512  Bytes$
+
+d = link length= $10 km$
+
+R = Transmission rate(bps) = $100 Mbps$
+
+步驟
+
+1. 計算封包大小為位元: 500 Bytes * 8 bits/Byte = 4000 bits
+2. 計算傳輸時間: 4000 bits / 1,000,000 bps = 0.004 秒 = 4 ms
+3. 計算傳播時間: 100 km * 1000 m/km / 2.8 * 10^8 m/s ≈ 0.000357 秒 ≈ 357 μs
+4.  4 ms > 356 us。傳輸時間遠大於傳播時間，因此發送端完成傳輸的時間會晚於第一個位元到達接收端。
+
+想像一條水管，如果緩慢地注水到水管中（低傳輸速率），而水管很長（高傳播延遲），那麼水會在水管完全充滿之前從另一端流出（第一個位元到達)；相反地，如果您快速地注水到水管中（高傳輸速率），而水管很短（低傳播延遲），那麼水管會在任何水流出之前就充滿。
+
+
 
 ##### How long does it take a packet of length 1,000 bytes to propagate over a link of distance 2,500 km, propagation speed $2.5 \times 10^8 m/s$, and transmission rate 2 Mbps? More generally, how long does it take a packet of length $L$ to propagate over a link of distance $d$, propagation speed $s$, and transmission rate $R$ bps? Does this delay depend on packet length? Does this delay depend on transmission rate?
 
