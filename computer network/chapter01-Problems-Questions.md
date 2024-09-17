@@ -167,42 +167,66 @@ R = Transmission rate(bps) = $512 kbps$
 1 Mbps (megabit) = 1000 kbps
 1 Gbps (gigabit) = 1000 mbps
 
-##### How long does it take a packet of length 1,000 bytes to propagate over a link of distance 2,500 km, propagation speed $2.5 \times 10^8 m/s$, and transmission rate 2 Mbps? More generally, how long does it take a packet of length $L$ to propagate over a link of distance $d$, propagation speed $s$, and transmission rate $R$ bps? Does this delay depend on packet length? Does this delay depend on transmission rate?
+##### 18. How long does it take a packet of length 1,000 bytes to propagate over a link of distance 2,500 km, propagation speed $2.5 \times 10^8 m/s$, and transmission rate 2 Mbps? More generally, how long does it take a packet of length $L$ to propagate over a link of distance $d$, propagation speed $s$, and transmission rate $R$ bps? Does this delay depend on packet length? Does this delay depend on transmission rate?
 
-- 4 ms
-- 10 ms
-    - 傳播延遲
-- no，延遲取決於數據包長度是不正確的；延遲取決於傳輸速率是不正確的
+-  14 ms = 10ms + 4ms
 
+s = Propagation speed = $2.5*10^8 m/s$
 
+L = Packet length = $1000   Bytes$ = $ 8000 bits$ 
+
+d = link length= $2500 km$ = $2500000 m$ 
+
+R = Transmission rate(bps) = $2 Mbps$ = $2000000 bps$
+
+$Propagation delay = d/s = 2,500 / 2.5×10^5 = 10 ms$
 $Transmission delay = L/R = 8 bits/byte * 1,000 bytes / 2,000,000 bps = 4 ms$
-
-$Propagation delay = d/s = 2,500 / 2.5×105 = 10 ms$
-
 $total time = 4ms + 10 ms = 14 ms$
 
-##### Suppose Host A wants to send a large file to Host B. The path from Host A to Host B has three links, of rates R1=500 kbps, R2=2 Mbps, and R3=1 Mbps.
+- $(d/s)+(L/R)$ = 傳輸延遲 + 傳播延遲
+
+- no，延遲取決於數據包長度是不正確的；延遲取決於傳輸速率是不正確的。總延遲，取決於封包長度和傳輸速率，但與距離和傳播速度無關。
+
+
+##### 19. Suppose Host A wants to send a large file to Host B. The path from Host A to Host B has three links, of rates R1=500 kbps, R2=2 Mbps, and R3=1 Mbps.
 
 - a. Assuming no other traffic in the network, what is the throughput for the file transfer?
     - $min{R1,R2,R3}$ = 500 kbps
 - b. Suppose the file is 4 million bytes. Dividing the file size by the throughput, roughly how long will it take to transfer the file to Host B?
-    - 4MB = 32000000 bits；500 Kbps = 500000 bps
-    - 32000000/500000 = 64 sec
+    - 4MB = 32000000 bits；500 Kbps = 500000 bps；32000000/500000 = 64 sec
 - c. Repeat (a) and (b), but now with $R_2$ reduced to 100 kbps.
     - 100 kbps 為吞吐量，32000000 bits / 100000 bps = 320 sec
 
-##### Suppose end system A wants to send a large file to end system B. At a very high level, describe how end system A creates packets from the file. When one of these packets arrives to a router, what information in the packet does the router use to determine the link onto which the packet is forwarded? Why is packet switching in the Internet analogous to driving from one city to another and asking directions along the way?
+##### 20. Suppose end system A wants to send a large file to end system B. At a very high level, describe how end system A creates packets from the file. When one of these packets arrives to a router, what information in the packet does the router use to determine the link onto which the packet is forwarded? Why is packet switching in the Internet analogous to driving from one city to another and asking directions along the way?
 
 - 將檔案分成數據塊，添加 header 訊息創建封包，該封包中含有目的地
 - 使用目的地地址決定鏈路
 - 每個封包維護目的地地址，封包顯示出轉發到哪個路徑的出站鏈接
 
 
-##### Visit the Queuing and Loss applet at the companion Web site. What is the maximum emission rate and the minimum transmission rate? With those rates, what is the traffic intensity? Run the applet with these rates and determine how long it takes for packet loss to occur. Then repeat the experiment a second time and determine again how long it takes for packet loss to occur. Are the values different? Why or why not?
+##### 21. Visit the Queuing and Loss applet at the companion Web site. What is the maximum emission rate and the minimum transmission rate? With those rates, what is the traffic intensity? Run the applet with these rates and determine how long it takes for packet loss to occur. Then repeat the experiment a second time and determine again how long it takes for packet loss to occur. Are the values different? Why or why not?
 - [網站](https://media.pearsoncmg.com/aw/ecs_kurose_compnetwork_7/cw/content/interactiveanimations/queuing-loss-applet/index.html)
 
-$500/350=1.42$
-##### List five tasks that a layer can perform. Is it possible that one (or more) of these tasks could be performed by two (or more) layers?
+Maximum emission rate =  $500 packets/sec$
+
+Maximum transmission rate = $350 packets/sec$
+
+traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了其處理能力，也就是說，網路上的資料量超過了網路能夠處理的極限。
+
+實驗結果差異：
+
+- 可能相同：如果模擬軟體的演算法是完全確定性的，每次給定相同的初始條件，就會產生完全相同的結果。
+- 可能不同：如果模擬軟體引入了隨機性，例如在封包生成時間、傳輸延遲等方面加入隨機因素，那麼每次實驗的結果就會有所差異。
+
+為什麼結果可能不同？
+- 隨機性
+    - 封包生成時間：封包不是在固定的時間間隔內生成，而是可能存在一定的隨機延遲。
+- 傳輸延遲
+    - 封包在網路中傳輸時，可能遇到不同的延遲，這也引入了一定的隨機性。
+- 緩衝區大小
+    - 緩衝區用於暫存尚未傳輸的封包。如果緩衝區太小，當流量過大時，很容易發生溢出，導致封包丟失。
+
+##### 22. List five tasks that a layer can perform. Is it possible that one (or more) of these tasks could be performed by two (or more) layers?
 
 - Flow control
 - Error control
@@ -210,7 +234,7 @@ $500/350=1.42$
 - Multiplexing
 - Connection setup
 
-#####  What are the five layers in the Internet protocol stack? What are the principal responsibilities of each of these layers?
+##### 23. What are the five layers in the Internet protocol stack? What are the principal responsibilities of each of these layers?
 
 1. Application layer
 - 用於在多個終端系統上發送數據
@@ -223,7 +247,7 @@ $500/350=1.42$
 5. Physical layer.
 - 在幀中將各個 bit 從一個節點傳輸到下一個節點
 
-##### What is an application-layer message? A transport-layer segment? A network-layer datagram? A link-layer frame?
+##### 24. What is an application-layer message? A transport-layer segment? A network-layer datagram? A link-layer frame?
 - application-layer message
     - 應用程式要發送的數據
 - transport-layer segment
@@ -233,7 +257,7 @@ $500/350=1.42$
 - link-layer frame
     - 將封包從一個節點移動到另一個節點
 
-#####  Which layers in the Internet protocol stack does a router process? Which layers does a link-layer switch process? Which layers does a host process?
+##### 25. Which layers in the Internet protocol stack does a router process? Which layers does a link-layer switch process? Which layers does a host process?
 - router process
     -  Physical layer
     -  Link layer
@@ -249,7 +273,7 @@ $500/350=1.42$
     - Application layer
 
 
-##### What is the difference between a virus and a worm?
+##### 26. What is the difference between a virus and a worm?
 |Virus|Worm|
 |---|---|
 |自我複製，透過郵件等傳播|駐留在受感染計算機記憶體中的自我複製|
@@ -258,7 +282,7 @@ $500/350=1.42$
 |往往會破壞損壞或更改目標計算機的檔案|不會修改任何檔案，而是只在破壞資源檔案|
 |需要某種形式的人類互動才能傳播|不需要人工干預|
 
-##### Describe how a botnet can be created and how it can be used for a DDoS attack
+##### 27. Describe how a botnet can be created and how it can be used for a DDoS attack
 - create botnet
     - 準備主機系統以查找攻擊者嘗試的漏洞
     - 惡意軟體攻擊或破壞主機系統
@@ -267,11 +291,11 @@ $500/350=1.42$
     - 主機系統可以掃描環境並從攻擊者那裡控制系統
     - 殭屍網絡的發起者可以遠程控制並向殭屍網路中的所有節點發出命令。因此，攻擊者控制多個源並讓每個源向目標猛烈發送流量，讓受害者癱瘓
 
-#####  Suppose Alice and Bob are sending packets to each other over a computer network. Suppose Trudy positions herself in the network so that she can capture all the packets sent by Alice and send whatever she wants to Bob; she can also capture all the packets sent by Bob and send whatever she wants to Alice. List some of the malicious things Trudy can do from this position.
+##### 28. Suppose Alice and Bob are sending packets to each other over a computer network. Suppose Trudy positions herself in the network so that she can capture all the packets sent by Alice and send whatever she wants to Bob; she can also capture all the packets sent by Bob and send whatever she wants to Alice. List some of the malicious things Trudy can do from this position.
 - 中間人
 - 可觀測封包
 
-
+### 習題
 ##### Equation 1.1 gives a formula for the end-to-end delay of sending one packet of length $L$ over $N$ links of transmission rate $R$. Generalize this formula for sending $P$ such packets back-toback over the $N$ links.
 最後一個封包只有等前面 $P-1$ 個封包傳輸出去才能傳輸，這等愛時間是$(P-1) \times \frac{L}{R}$，最後一個封包在鏈路中的傳輸延遲是 $N \times \frac{L}{R}$，所以總時間為 $(N + P-1) \times \frac{L}{R}$
 
