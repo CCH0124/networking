@@ -136,26 +136,36 @@ d = link length= $10 km$
 
 R = Transmission rate(bps) = $100 Mbps$
 
+步驟
+
+1. 計算封包大小為位元: 100 Bytes * 8 bits/Byte = 800 bits
+2. 計算傳輸時間: 800 bits / 100,000,000 bps = $8.0 × 10^{-6}$ 秒 = 8 μs
+3. 計算傳播時間: 10 km * 1000 m/km / 2.8 * 10^8 m/s ≈ 0.00035714285 秒 ≈ 357.14285 µs
+4.  8 μs > 35.7 µs。傳輸時間遠大於傳播時間，因此發送端完成傳輸的時間會晚於第一個位元到達接收端。
+
 傳播快於傳輸，選擇較小的封包大小和較低的傳輸速率。這樣會讓傳輸時間相對較短。
 
 s = Propagation speed = $2.8*10^8 m/s$
 
-L = Packet length = $512  Bytes$
+L = Packet length = $100   Bytes$
 
 d = link length= $10 km$
 
-R = Transmission rate(bps) = $100 Mbps$
+R = Transmission rate(bps) = $512 kbps$
 
 步驟
 
-1. 計算封包大小為位元: 500 Bytes * 8 bits/Byte = 4000 bits
-2. 計算傳輸時間: 4000 bits / 1,000,000 bps = 0.004 秒 = 4 ms
-3. 計算傳播時間: 100 km * 1000 m/km / 2.8 * 10^8 m/s ≈ 0.000357 秒 ≈ 357 μs
-4.  4 ms > 356 us。傳輸時間遠大於傳播時間，因此發送端完成傳輸的時間會晚於第一個位元到達接收端。
+1. 計算封包大小為位元: 100 Bytes * 8 bits/Byte = 800 bits
+2. 計算傳輸時間: 800 bits / 512,000 bps = 0.0015625 秒 ≈ 1.5625 毫秒
+3. 計算傳播時間: 10 km * 1000 m/km / (2.8 * 10^8 m/s) ≈ 0.0000357 秒 ≈ 357.14285 µs
+4.  1.5625 ms < 35.7 µs。傳輸時間遠大於傳播時間，因此發送端完成傳輸的時間會晚於第一個位元到達接收端。
 
 想像一條水管，如果緩慢地注水到水管中（低傳輸速率），而水管很長（高傳播延遲），那麼水會在水管完全充滿之前從另一端流出（第一個位元到達)；相反地，如果您快速地注水到水管中（高傳輸速率），而水管很短（低傳播延遲），那麼水管會在任何水流出之前就充滿。
 
-
+1 bps 是 1 bit per second
+1 kbps (kilobit) = 1000 bps
+1 Mbps (megabit) = 1000 kbps
+1 Gbps (gigabit) = 1000 mbps
 
 ##### How long does it take a packet of length 1,000 bytes to propagate over a link of distance 2,500 km, propagation speed $2.5 \times 10^8 m/s$, and transmission rate 2 Mbps? More generally, how long does it take a packet of length $L$ to propagate over a link of distance $d$, propagation speed $s$, and transmission rate $R$ bps? Does this delay depend on packet length? Does this delay depend on transmission rate?
 
