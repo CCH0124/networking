@@ -100,7 +100,7 @@
 - 如果兩個ISP不相互對等，則當它們彼此發送流量時，它們必須通過提供商ISP（中間商）發送流量，而他們必須為攜帶流量付費。 通過直接相互對等，兩個ISP可以減少向其提供商ISP的付款。 Internet交換點（IXP）（通常在具有自己的交換機的獨立建築物中）是多個ISP可以連接和/或對等連接的匯合點。 ISP通過向連接到IXP的每個ISP收取相對較小的費用來賺錢，這可能取決於發送給IXP或從IXP接收的流量。
     - IPX 是匯合點，多個 ISP 在此對等
 
-##### 15. Some content providers have created their own networks. Describe Google’s network. What motivates content providers to create these networks?
+##### 15. Some content providers have created their own networks. Describe Google's network. What motivates content providers to create these networks?
 
 Google 的專用網路將其所有大小數據中心連接在一起。Google 數據中心之間的流量透過其專用網路而不是公共 Internet 傳遞。這些數據中心中有許多位於或靠近較低層的 ISP。因此，當 Google 向用戶交付內容時，它通常可以繞過更高級別的 ISP。是什麼促使內容提供商創建這些網路？首先，由於內容提供商只需使用很少的中間 ISP，因此可以更好地控制用戶體驗。 其次，它可以通過向提供商網路發送更少的流量來節省資金。第三，如果 ISP 決定向高利潤的內容提供商收取更多的錢，則內容提供商可以避免這些額外的付款。
 
@@ -296,10 +296,52 @@ traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了�
 - 可觀測封包
 
 ### 習題
-##### Equation 1.1 gives a formula for the end-to-end delay of sending one packet of length $L$ over $N$ links of transmission rate $R$. Generalize this formula for sending $P$ such packets back-toback over the $N$ links.
-最後一個封包只有等前面 $P-1$ 個封包傳輸出去才能傳輸，這等愛時間是$(P-1) \times \frac{L}{R}$，最後一個封包在鏈路中的傳輸延遲是 $N \times \frac{L}{R}$，所以總時間為 $(N + P-1) \times \frac{L}{R}$
+##### 1. Design and describe an application-level protocol to be used between an automatic teller machine and a bank's centralized computer. Your protocol should allow a user's card and password to be verified, the account balance (which is maintained at the centralized computer) to be queried, and an account withdrawal to be made (that is, money disbursed to the user). Your protocol entities should be able to handle the all-too-common case in which there is not enough money in the account to cover the withdrawal. Specify your protocol by listing the messages exchanged and the action taken by the automatic teller machine or the bank's centralized computer on transmission and receipt of messages. Sketch the operation of your protocol for the case of a simple withdrawal with no errors, using a diagram similar to that in Figure 1.2 . Explicitly state the assumptions made by your protocol about the underlying end-to end transport service.
 
-##### Consider an application that transmits data at a steady rate (for example, the sender generates an N-bit unit of data every k time units, where k is small and fixed). Also, when such an application starts, it will continue running for a relatively long period of time. Answer the following questions, briefly justifying your answer:
+ATM 到 Server 交互指令(Message 欄位)
+```
+Message         Description
+---             ---
+Hello           向伺服器發送，ATM 中插入的卡號
+PASSWORD        系統會要求使用者輸入 PIN 碼，並傳送到伺服器
+BALANCE         使用者要求查看餘額
+WITHDRAWL       使用者要求提款
+BYE             使用者完成交易操作
+```
+
+Server 到 ATM 交互指令(Message 欄位)
+```
+Message         Description
+---             ---
+PASSWORD        要求使用者 PIN 碼
+OK              最後一個請求操作，即提款。且成功完成
+ERR             最後一個請求操作，即提款。操作失敗
+AMOUNT          回應查看餘額
+BYE             使用者完成後，ATM 上顯示歡迎畫面在螢幕上
+```
+
+Handshake 
+
+```
+Client                        Server
+---                           ---
+HELLO       --card-->        檢查卡是否正確
+            <--PASSWORD--
+PASSWORD    ---->            驗證密碼是否正確
+            <--OK--
+BALANCE     ---->
+            <----            回覆金額
+WITHDRAWL   ---->            檢查金額是否足夠
+            <--OK--
+ATM dispense
+BYE         ---->
+            <----
+```
+
+##### 2. Equation 1.1 gives a formula for the end-to-end delay of sending one packet of length $L$ over $N$ links of transmission rate $R$. Generalize this formula for sending $P$ such packets back-toback over the $N$ links.
+最後一個封包只有等前面 $P-1$ 個封包傳輸出去才能傳輸，這等待時間是$(P-1) \times \frac{L}{R}$，最後一個封包在鏈路中的傳輸延遲是 $N \times \frac{L}{R}$，所以總時間為 $(N + P-1) \times \frac{L}{R}$
+
+##### 3. Consider an application that transmits data at a steady rate (for example, the sender generates an N-bit unit of data every k time units, where k is small and fixed). Also, when such an application starts, it will continue running for a relatively long period of time. Answer the following questions, briefly justifying your answer:
 - a. Would a packet-switched network or a circuit-switched network be more appropriate for this application? Why?
     - circuit-switched
         - 解決了固定頻寬和長時間會話的問題
@@ -307,7 +349,7 @@ traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了�
     - 原因是已啟用鏈接的足夠頻寬以完成應用程序的任務(傳輸速率總和小於鏈路容量)
         - 不會發生等待問題
 
-#####  Consider the circuit-switched network in Figure 1.13 . Recall that there are 4 circuits on each link. Label the four switches A, B, C, and D, going in the clockwise direction.
+##### 4. Consider the circuit-switched network in Figure 1.13 . Recall that there are 4 circuits on each link. Label the four switches A, B, C, and D, going in the clockwise direction.
 - a. What is the maximum number of simultaneous connections that can be in progress at any one time in this network?
     - 16
         - A to B --> 4
@@ -324,7 +366,7 @@ traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了�
 
 ![](https://i.imgur.com/N9u0OvK.png)
 
-#####  Review the car-caravan analogy in Section 1.4 . Assume a propagation speed of 100 km/hour.
+##### 5. Review the car-caravan analogy in Section 1.4 . Assume a propagation speed of 100 km/hour.
 - a. Suppose the caravan travels 150 km, beginning in front of one tollbooth, passing through a second tollbooth, and finishing just after a third tollbooth. What is the end-to-end delay?
     - 傳播速率 100km/hour
     - 收費站將整個車隊推向公路的時間為 10 輛/(5輛/min) = 2 min，
@@ -333,7 +375,7 @@ traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了�
     - 端到端延遲 1.5 hr + 6mun = 1 hr 36 min
 - b. Repeat (a), now assuming that there are eight cars in the caravan instead of ten.
     - 8 輛/(5輛/min) = 1.6 min
-    - 1.6 * 3 = 4.8 min
+    - 1.6 * 3 = 288s = 4.8 min
     - 1.5+4.8 = 1 hr 34 min 48 sec
 
 ##### This elementary problem begins to explore propagation delay and transmission delay, two central concepts in data networking. Consider two hosts, A and B, connected by a single link of rate $R$ bps. Suppose that the two hosts are separated by $m$ meters, and suppose the propagation speed along the link is $s meters/sec$. Host A is to send a packet of size $L$ bits to Host B.
@@ -353,7 +395,7 @@ traffic intensity = $500/350=1.43$，1.43 > 1，這表示網路負載超過了�
     - $d_{prop}$ = $d_{trans}$ ---> m/s = L/R
     - $m=\frac{L}{R}s = \frac{120}{56 \times 10^3}(2.5 \times 10^8) = 536 km$
 
-##### In this problem, we consider sending real-time voice from Host A to Host B over a packetswitched network (VoIP). Host A converts analog voice to a digital 64 kbps bit stream on the fly. Host A then groups the bits into 56-byte packets. There is one link between Hosts A and B; its transmission rate is 2 Mbps and its propagation delay is 10 msec. As soon as Host A gathers a packet, it sends it to Host B. As soon as Host B receives an entire packet, it converts the packet’s bits to an analog signal. How much time elapses from the time a bit is created (from the original analog signal at Host A) until the bit is decoded (as part of the analog signal at Host B)?
+##### In this problem, we consider sending real-time voice from Host A to Host B over a packetswitched network (VoIP). Host A converts analog voice to a digital 64 kbps bit stream on the fly. Host A then groups the bits into 56-byte packets. There is one link between Hosts A and B; its transmission rate is 2 Mbps and its propagation delay is 10 msec. As soon as Host A gathers a packet, it sends it to Host B. As soon as Host B receives an entire packet, it converts the packet's bits to an analog signal. How much time elapses from the time a bit is created (from the original analog signal at Host A) until the bit is decoded (as part of the analog signal at Host B)?
 Host A 產生 56 byte 封包所需時間 $\frac{56 \times 8}{64 \times 10^3} = 0.007 sec$
 傳輸延遲 = $L/R$ = $\frac{56 \times 8}{2 \times 10^6} = 0.000224 sec$，L 為封包大小
 
