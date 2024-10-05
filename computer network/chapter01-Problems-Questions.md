@@ -378,7 +378,7 @@ BYE         ---->
     - 1.6 * 3 = 288s = 4.8 min
     - 1.5+4.8 = 1 hr 34 min 48 sec
 
-##### This elementary problem begins to explore propagation delay and transmission delay, two central concepts in data networking. Consider two hosts, A and B, connected by a single link of rate $R$ bps. Suppose that the two hosts are separated by $m$ meters, and suppose the propagation speed along the link is $s meters/sec$. Host A is to send a packet of size $L$ bits to Host B.
+##### 6. This elementary problem begins to explore propagation delay and transmission delay, two central concepts in data networking. Consider two hosts, A and B, connected by a single link of rate $R$ bps. Suppose that the two hosts are separated by $m$ meters, and suppose the propagation speed along the link is $s meters/sec$. Host A is to send a packet of size $L$ bits to Host B.
 - Express the propagation delay, $d_{prop}$ , in terms of $m$ and $s$
     - $d_{prop} = m/s sec$
 - Determine the transmission time of the packet, $d_{trans}$ , in terms of $L$ and $R$
@@ -393,17 +393,15 @@ BYE         ---->
     - 抵達目的地
 - Suppose $s=2.5 \times 108$,$L=120$ bits , and $R=56$ kbps Find the distance $m$ so that $d_{prop}$ equals $d_{trans}$ .
     - $d_{prop}$ = $d_{trans}$ ---> m/s = L/R
-    - $m=\frac{L}{R}s = \frac{120}{56 \times 10^3}(2.5 \times 10^8) = 536 km$
+    - $m=\frac{L}{R}/s = \frac{120}{56 \times 10^3}(2.5 \times 10^8) = 536 km$
 
-##### In this problem, we consider sending real-time voice from Host A to Host B over a packetswitched network (VoIP). Host A converts analog voice to a digital 64 kbps bit stream on the fly. Host A then groups the bits into 56-byte packets. There is one link between Hosts A and B; its transmission rate is 2 Mbps and its propagation delay is 10 msec. As soon as Host A gathers a packet, it sends it to Host B. As soon as Host B receives an entire packet, it converts the packet's bits to an analog signal. How much time elapses from the time a bit is created (from the original analog signal at Host A) until the bit is decoded (as part of the analog signal at Host B)?
+##### 7. In this problem, we consider sending real-time voice from Host A to Host B over a packetswitched network (VoIP). Host A converts analog voice to a digital 64 kbps bit stream on the fly. Host A then groups the bits into 56-byte packets. There is one link between Hosts A and B; its transmission rate is 2 Mbps and its propagation delay is 10 msec. As soon as Host A gathers a packet, it sends it to Host B. As soon as Host B receives an entire packet, it converts the packet's bits to an analog signal. How much time elapses from the time a bit is created (from the original analog signal at Host A) until the bit is decoded (as part of the analog signal at Host B)?
 Host A 產生 56 byte 封包所需時間 $\frac{56 \times 8}{64 \times 10^3} = 0.007 sec$
-傳輸延遲 = $L/R$ = $\frac{56 \times 8}{2 \times 10^6} = 0.000224 sec$，L 為封包大小
+傳輸延遲 = $L/R$ = $\frac{56 \times 8}{2 \times 10^6} = 0.000224 sec$，$L$ 為封包大小
 
 總花費時間 = 產生封包時間 + 傳輸時間 + 傳播延遲 = $0.007+0.000224+0.01 = 0.017224 sec$
 
-
-
-#####  Suppose users share a 3 Mbps link. Also suppose each user requires 150 kbps when transmitting, but each user transmits only 10 percent of the time. (See the discussion of packet switching versus circuit switching in Section 1.3 .)
+##### 8. Suppose users share a 3 Mbps link. Also suppose each user requires 150 kbps when transmitting, but each user transmits only 10 percent of the time. (See the discussion of packet switching versus circuit switching in Section 1.3 .)
 - a. When circuit switching is used, how many users can be supported?
     - $\frac{3*10^3 kbps}{150 kbps} = 20$
 - b. For the remainder of this problem, suppose packet switching is used. Find the probability that a given user is transmitting.
@@ -413,30 +411,69 @@ Host A 產生 56 byte 封包所需時間 $\frac{56 \times 8}{64 \times 10^3} = 0
 - d. Find the probability that there are 21 or more users transmitting simultaneously.
     - ?
 
-#####  Consider the discussion in Section 1.3 of packet switching versus circuit switching in which an example is provided with a 1 Mbps link. Users are generating data at a rate of 100 kbps when busy, but are busy generating data only with probability $p=0.1$. Suppose that the 1 Mbps link is replaced by a 1 Gbps link.
+##### 9. Consider the discussion in Section 1.3 of packet switching versus circuit switching in which an example is provided with a 1 Mbps link. Users are generating data at a rate of 100 kbps when busy, but are busy generating data only with probability $p=0.1$. Suppose that the 1 Mbps link is replaced by a 1 Gbps link.
 - a. What is $N$, the maximum number of users that can be supported simultaneously under circuit switching?
-    - $\frac{1Gbps}{100kbps} = 10000$
+    - $\frac{total transmission rate}{Rate of data generation by the user when busy}$ = $\frac{1Gbps}{100kbps} = 10000$
 - b. Now consider packet switching and a user population of M users. Give a formula (in terms of p, M, N) for the probability that more than N users are sending data.
     - ?
-#####  Consider a packet of length $L$ which begins at end system A and travels over three links to a destination end system. These three links are connected by two packet switches. Let $d_i$, $s_i$, and $R_i$ denote the length, propagation speed, and the transmission rate of link $i$, for $i = 1, 2, 3$. The packet switch delays each packet by $d_{proc}$. Assuming no queuing delays, in terms of $d_i$, $s_i$, $R_i$, ($i = 1,2,3$), and $L$, what is the total end-to-end delay for the packet? Suppose now the packet is 1,500 bytes, the propagation speed on all three links is $2.5 \times 108 m/s$, the transmission rates of all three links are 2 Mbps, the packet switch processing delay is 3 msec, the length of the first link is 5,000 km, the length of the second link is 4,000 km, and the length of the last link is 1,000 km. For these values, what is the end-to-end delay?
-處理延遲時間 $d_{proc} = 3 msec$
+##### 10. Consider a packet of length $L$ which begins at end system A and travels over three links to a destination end system. These three links are connected by two packet switches. Let $d_i$, $s_i$, and $R_i$ denote the length, propagation speed, and the transmission rate of link $i$, for $i = 1, 2, 3$. The packet switch delays each packet by $d_{proc}$. Assuming no queuing delays, in terms of $d_i$, $s_i$, $R_i$, ($i = 1,2,3$), and $L$, what is the total end-to-end delay for the packet? Suppose now the packet is 1,500 bytes, the propagation speed on all three links is $2.5 \times 108 m/s$, the transmission rates of all three links are 2 Mbps, the packet switch processing delay is 3 msec, the length of the first link is 5,000 km, the length of the second link is 4,000 km, and the length of the last link is 1,000 km. For these values, what is the end-to-end delay?
 
-- First Link
-傳輸延遲$L/R_1 = \frac{1500 \times 8}{2 \times 10^6} = 0.006 sec$
-傳播延遲$d1/s1 = \frac{5000 \times 10^3}{2.5 \times 10^8} = 0.02 sec$
+概念:
 
-- Second Link
+- 傳輸延遲 
+    - 取決於封包長度與傳輸(鏈路)速率
+    - $L/R$
+- 傳播延遲 
+    - 取決於物理媒介和路由器距離
+    - $d/s$
+
+1. 處理延遲時間 $d_{proc} = 3 msec$
+2. First Link
+
+傳輸延遲: $L/R_1 = \frac{1500 \times 8}{2 \times 10^6} = 0.006 sec$
+
+傳播延遲: $d_1/s_1 = \frac{5000 \times 10^3}{2.5 \times 10^8} = 0.02 sec$
+
+3. Second Link
+
 $L/R_2 = \frac{1500 \times 8}{2 \times 10^6} = 0.006 sec$
-$d2/s2 = \frac{4000 \times 10^3}{2.5 \times 10^8} = 0.016 sec$
 
-- Third Link
+$d_2/s_2 = \frac{4000 \times 10^3}{2.5 \times 10^8} = 0.016 sec$
+
+4. Third Link
+
 $L/R_3 = \frac{1500 \times 8}{2 \times 10^6} = 0.006 sec$
-$d3/s3 = \frac{1000 \times 10^3}{2.5 \times 10^8} = 0.004 sec$
 
-- total
+$d_3/s_3 = \frac{1000 \times 10^3}{2.5 \times 10^8} = 0.004 sec$
+
+5. total
+
+$\Sigma_{i=1}^{3} \frac{d_i}{s_i} + \Sigma_{i=1}^{3} \frac{R_i}{L_i} + 2 d_{proc} $ = 
 $0.006+0.006+0.006+0.02+0.016+0.004+0.003+0.003 = 0.064$
 
-#####  In the above problem, suppose R1=R2=R3=R and $d_{proc}=0$. Further suppose the packet switch does not store-and-forward packets but instead immediately transmits each bit it receives before waiting for the entire packet to arrive. What is the end-to-end delay?
+##### 11. In the above problem, suppose R1=R2=R3=R and $d_{proc}=0$. Further suppose the packet switch does not store-and-forward packets but instead immediately transmits each bit it receives before waiting for the entire packet to arrive. What is the end-to-end delay?
+
+1. 處理延遲時間 $d_{proc} = 0 msec$
+2. First Link
+
+傳輸延遲: $L/R_1 = \frac{1500 \times 8}{2 \times 10^6} = 0.006 sec$
+
+傳播延遲: $d_1/s_1 = \frac{5000 \times 10^3}{2.5 \times 10^8} = 0.02 sec$
+
+3. Second Link
+
+
+$d_2/s_2 = \frac{4000 \times 10^3}{2.5 \times 10^8} = 0.016 sec$
+
+4. Third Link
+
+$d_3/s_3 = \frac{1000 \times 10^3}{2.5 \times 10^8} = 0.004 sec$
+
+5. total
+
+$\Sigma_{i=1}^{3} \frac{d_i}{s_i} + \Sigma_{i=1}^{3} \frac{R_i}{L_i} + 2 d_{proc} $ = 
+$0.006+0.02+0.016+0.004 = 0.046$
+
 
 packet 1500 byte = 1500 * 8 bit
 傳播延遲 $2.5 \times 10^8 m/s$
@@ -444,23 +481,29 @@ packet 1500 byte = 1500 * 8 bit
 
 $0.006+0.02+0.016+0.004 = 0.046$
 
-##### A packet switch receives a packet and determines the outbound link to which the packet should be forwarded. When the packet arrives, one other packet is halfway done being transmitted on this outbound link and four other packets are waiting to be transmitted. Packets are transmitted in order of arrival. Suppose all packets are 1,500 bytes and the link rate is 2 Mbps. What is the queuing delay for the packet? More generally, what is the queuing delay when all packets have length $L$, the transmission rate is $R$, $x$ bits of the currently-being-transmitted packet have been transmitted, and $n$ packets are already in the queue?
-Packet Length = $L$
-Transmission rate = $R$
-Currently trannsmitted packet = $x\ bit$
-Waiting quene = $n$ packets
-- $L = 1500 bytes$
-- $R = 2Mbps = 2 \times 10^6 bps$
-- $x = 1500/2 = 750$
-- $n = 4$
-- $(4 \times 1500) + (1500-750) \times 2 \times 4 = 54000$
-- $\frac{54000}{2 \times 10^6} = 0.027 sec$
+##### 12. A packet switch receives a packet and determines the outbound link to which the packet should be forwarded. When the packet arrives, one other packet is halfway done being transmitted on this outbound link and four other packets are waiting to be transmitted. Packets are transmitted in order of arrival. Suppose all packets are 1,500 bytes and the link rate is 2 Mbps. What is the queuing delay for the packet? More generally, what is the queuing delay when all packets have length $L$, the transmission rate is $R$, $x$ bits of the currently-being-transmitted packet have been transmitted, and $n$ packets are already in the queue?
 
-完整封包延遲為 $\frac{1500 \times 8}{2 Mbps} = 0.6 ms$
-4.5 個封包總排隊延遲為 $4.5 \times 0.6 = 2.7 ms$
-$\frac{L_n}{R} + \frac{L-x}{R}$
-##### 題目為以下
+已知條件：
+- Packet Length = $L = 1500 bytes$
+- Transmission rate = $R = 2Mbps = 2 \times 10^6 bps$
+- Currently trannsmitted packet = $x bytes = 1500/2 = 750$ (題目說有一個封包被傳輸一半)
+- Waiting quene = $n packets = 4$
+
+
+每個封包的大小為 $L bits$，鏈路傳輸速率為 $R bps$，當前正在傳輸的封包已經傳輸了 $x bits$，且隊列中已經有 $n$ 個封包等待傳輸。
+
+1. 當前封包剩餘的傳輸時間: $\frac{L-x}{R}$
+2. 隊列中所有封包的傳輸時間: $n \times \frac{L}{R}$
+3. 總排隊延遲(queuing delay)：$\frac{L-x}{R} + n \times \frac{L}{R}$
+
+剩餘傳輸時間 = $\frac{(1500-750) \times 8 bits}{2 \times 2 * 10^6 bits} = 3 ms$
+每個封包的傳輸時間 = $\frac{1500 \times 8 bits}{2 \times 2 * 10^6 bits} = 6 ms$，因為剩餘 $4$ 個，排隊封包總傳輸時間是 $ 4 * 6ms = 24 ms$
+
+當封包到達時，必須等到當前正在傳輸的封包完成傳輸，然後還需要等待 4 個封包傳輸完成。因此，總的排隊延遲為：$24 ms + 3ms = 27 ms$
+
+##### 13. 接續題目為以下
 - a. Suppose $N$ packets arrive simultaneously to a link at which no packets are currently being transmitted or queued. Each packet is of length $L$ and the link has transmission rate $R$. What is the average queuing delay for the $N$ packets?
+    - 每個封包的傳輸時間: $T_{transmission} = \frac{L}{R}$
     - 第一個封包無延遲
     - 第二個為 $\frac{L}{R}$、第三個為 $\frac{2L}{R}$
     - 第 $N$ 個封包延遲為 $(N-1)\frac{L}{R}$
@@ -469,7 +512,7 @@ $\frac{L_n}{R} + \frac{L-x}{R}$
     - $(N-1)\frac{L}{2R}$
         - 當下一波 $N$ 個封包抵達時，上一波的已經轉傳完成
 
-#####  Consider the queuing delay in a router buffer. Let I$$ denote traffic intensity; that is, $I=La/R$.Suppose that the queuing delay takes the form $IL/R(1-l)$ for $I<L$.
+##### Consider the queuing delay in a router buffer. Let I$$ denote traffic intensity; that is, $I=La/R$.Suppose that the queuing delay takes the form $IL/R(1-l)$ for $I<L$.
 - a. Provide a formula for the total delay, that is, the queuing delay plus the transmission delay.
     - $queue delay + transmission delay = \frac{IL}{R(1-I)} + \frac{L}{R} = \frac{L}{R(1-I)}$
 - b. Plot the total delay as a function of $L/R$.
