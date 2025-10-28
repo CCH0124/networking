@@ -45,6 +45,8 @@
 
 
 沒有手動設定 RD 和 RT，Cumulus Linux 會自動產生它們：
+- RD (路由辨識碼) 格式： `<vxlan-local-tunnelip>:<VNI>`
+- RT (路由目標) 格式： `<AS>:<VNI>`
 
 - RD (路由辨識碼) 格式： <vxlan-local-tunnelip>:<VNI>
 - RT (路由目標) 格式： <AS>:<VNI>
