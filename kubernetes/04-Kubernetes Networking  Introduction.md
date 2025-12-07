@@ -287,7 +287,7 @@ CNI 插件有兩個責任，為 POD 分配唯一的 IP 地址，並確保 Kubern
 
 [network-plugins](https://kubernetes.io/zh-cn/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/)
 
->在 Kubernetes 1.24 之前，CNI 插件也可以由 kubelet 使用命令行參數 cni-bin-dir 和 network-plugin 管理。 Kubernetes 1.24 移除了這些命令行參數， CNI 的管理不再是 kubelet 的工作。
+> 在 Kubernetes 1.24 之前，CNI 插件也可以由 kubelet 使用命令行參數 cni-bin-dir 和 network-plugin 管理。 Kubernetes 1.24 移除了這些命令行參數， CNI 的管理不再是 kubelet 的工作。
 
 CNI 網路模型有兩大類：平面網路(flat networks)和覆蓋網路(overlay networks)。在平面網路中，CNI 驅動程式使用來自集群網路的 IP 地址，這通常需要許多 IP 地址才能用於集群。在覆蓋網路中，CNI 驅動程式在 Kubernetes 中創建一個次要網路，它使用集群的網路（underlay network）發送封包。覆蓋網路在集群內創建一個虛擬網路，在其中，CNI 插件封裝封包。
 
@@ -299,7 +299,7 @@ CNI 規範有第二個，即 IP Address Management (IPAM) 接口，以減少 CNI
 
 [可參考](https://github.com/containernetworking/cni/blob/main/SPEC.md#section-4-plugin-delegation)
 
-##  CNI Plugins ----
+##  CNI Plugins
 ### Cilium
 
 ##### Agent
@@ -318,36 +318,74 @@ CNI 規範有第二個，即 IP Address Management (IPAM) 接口，以減少 CNI
 
 CNI 插件 (cilium-cni) 與節點的 Cilium API 交互以觸發配置以提供網路、負載均衡和網路政策(NetworkPolicy)。
 
-
 ### kube-proxy
-kube-proxy 是 Kubernetes 中基於節點的守護進程。在集群中提供附載均衡功能，它實現服務(Service)並依賴於 `Endpoints/EndpointSlices`。
-- Service 為一組 pod 定義負載均衡
-- Endpoint 和 EndpointSlice 列出了就緒的 POD IP。它們是從 Service 自動創建，使用與 Service 相同的 pod。
+
+`kube-proxy` 是每個節點上的常駐程式，負責在集群內部實作 Service 的基本負載平衡功能，它將 Service Cluster IP 的流量路由到健康的 Pod Endpoints。
+
+* **Userspace Mode (使用者空間):** 最早的模式。kube-proxy 作為一個使用者空間的進程，代理並轉發連線，效率較低。
+* **iptables Mode (預設模式):** 完全使用 iptables 規則進行連線扇出。由於缺乏真正的負載平衡演算法，且在大規模集群中，處理大量 iptables 規則會導致性能瓶頸和延遲。
+* **IPVS Mode (IP Virtual Server):** 使用 Linux 內建的 L4 負載平衡器 IPVS，支援多種負載平衡演算法（如 Round-robin, Least connection, Source Hashing），顯著提高了大規模集群 Service 路由的效能和擴展性。
+* **kernelspace Mode:** 僅適用於 Windows 節點的模式。
+
+kube-proxy 在集群中提供附載均衡功能，它實現服務(Service)並依賴於 `Endpoints/EndpointSlices`。
+
+* Service 為一組 pod 定義負載均衡
+* Endpoint 和 EndpointSlice 列出了就緒的 POD IP。它們是從 Service 自動創建，使用與 Service 相同的 pod。
 
 大多數類型服務(Service)都有一個 IP 地址，稱為 `cluster IP`，它在集群外是不可被路由的。`kube-proxy` 負責將對服務集群 IP 地址的請求路由到健康的 POD。
 
 kube-proxy 有四種模式，它們改變了它的運行時模式
-- userspace
-- iptables
-- ipvs
-- kernelspace
+
+* userspace
+* iptables
+* ipvs
+* kernelspace
 
 `--proxy-mode <mode>` 可以指定，但*所有模式都在一定程度上依賴於 iptables*。
 
-#### userspace Mode
+##### userspace Mode
+
 最舊的模式，kube-proxy 運行一個 Web 服務器，並使用 iptables 將所有服務 IP 地址路由到 Web 服務器。Web 服務器終止連接並將請求代理到服務端點中的 POD。此模式不建議使用。
 
-#### iptables Mode
+##### iptables Mode
+
 iptables 模式是扇出(fan-out)，而不是真正的負載均衡。iptables 模式會將連線路由到 POD，並且該連線發出的所有請求都將轉到同一個 POD，直到連線終止。假設有兩個 POD 提供服務，是 X 和 Y，且在正常滾動更新期間將 X 替換為 Z。較舊的 Y 仍然有所有現有連線，加上 X 關閉時需要重新建立的一半連線，導致 Y 要提供更多流量，這也出現了不平衡的流量決策。
 
 架設服務有以下健康的 POD
-- 10.10.0.1
-- 10.10.0.2
-- 10.10.0.3
-- 10.10.0.4
 
-`kube-proxy` 將會建立如下的路由連線
-- 25% 至 10.10.0.1
-- 33.3% 未路由連接至 10.0.0.2
-- 50% 未路由連接至 10.0.0.3
-- 未路由的連接都轉到 10.0.0.4
+* 10.10.0.1
+* 10.10.0.2
+* 10.10.0.3
+* 10.10.0.4
+
+`kube-proxy` 將會建立如下的路由連線
+
+* 25% 至 10.10.0.1
+* 33.3% 未路由連接至 10.0.0.2
+* 50% 未路由連接至 10.0.0.3
+* 未路由的連接都轉到 10.0.0.4
+
+## **NetworkPolicy (網路策略)**
+
+NetworkPolicy 是 Kubernetes 中用於限制 Pod 間通訊的資源類型，因為集群預設允許所有Pod之間任意通訊。
+
+* **安全性原則:** NetworkPolicy 是一種基於「允許」規則（allow-based）的防火牆。一旦 Pod 被 NetworkPolicy 選中，其 Ingress 或 Egress 流量預設會被封鎖，除非有規則明確允許。
+* **CNI依賴性:** NetworkPolicy 的實作是 **可選的**，必須使用支援 NetworkPolicy 的 CNI 插件（如 Cilium 或 Calico）才能生效。
+* **選擇器 (Selectors):** 透過 `podSelector` 選擇應套用策略的 Pod，並可使用 `namespaceSelector` 和 `ipBlock` 來定義允許的通訊來源或目標。
+* **L7 感知:** 某些先進的 CNI（如 Cilium）支援 L7 層（HTTP）的 NetworkPolicy，能夠根據 URI 路徑或方法進行流量過濾。
+
+## **DNS (域名系統)**
+
+DNS 是 Kubernetes 服務發現機制的核心基礎。
+
+* **CoreDNS:** Kubernetes 1.13 版本後採用 CoreDNS 作為標準 DNS 服務，其以單一容器和插件機制提供服務。
+* **DNS 策略 (`dnsPolicy`):** Pod 可以配置不同的 DNS 解析策略，例如 `ClusterFirst`（優先解析集群內域名）或 `None`（完全依賴 `dnsConfig` 定義的 nameservers）。
+* **Autopath:** CoreDNS 插件允許伺服器端完成搜尋路徑補全，能減少應用程式進行 DNS 解析時的查詢次數，從而降低延遲。
+
+## **IPv4/IPv6 Dual Stack (雙協議棧)**
+
+Kubernetes 支援在集群中同時使用 IPv4 和 IPv6 地址：
+
+* **啟用要求:** 在 Kubernetes 1.20 時仍為 Alpha 功能（但在 1.21 後預設啟用），需要通過功能閘（Feature Gate）啟用 `IPv6DualStack`。
+* **控制平面配置:** 相關組件（如 kube-apiserver, kube-controller-manager, kube-proxy）都需要配置 IPv4 和 IPv6 的 CIDR 範圍。
+* **Service 設置:** 服務可以通過 `ipFamilyPolicy` 欄位來指定使用單一棧（SingleStack）或同時要求雙協議棧（RequireDualStack）。
