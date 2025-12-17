@@ -19,8 +19,11 @@
 |DLID (Destination LID)|目的端 LID|封包要傳送到的目的地 LID。|
 |multi-swid (Multi Switch-ID)|多重交換器 ID|在單一台實體 InfiniBand 交換器上，虛擬化出多個邏輯交換器的技術。|
 |P_Key (Partition Key)|分區金鑰|InfiniBand 用來限制特定流量發送、接收或轉發的方式。概念上類似於乙太網的 VLAN，但機制有所不同 (用於邏輯隔離)。|
+|Floating LID (FLID)|浮動 LID|用於從本地子網路由到遠端子網上的分葉交換機 (leaf switches)。|
+|multi-swid (Multi Switch-ID)|多重交換機 ID|在單一實體 InfiniBand 交換機上虛擬化出多個交換機的技術。|
 
 >> **SM 與 LIDs 的關係：** 在 InfiniBand 網路中，設備插上線並不會自動通訊，必須等待 SM 掃描整個網路拓撲後，指派 LID 給每一個 Port，網路才會「活」過來。
+
 >> **P_Key vs VLAN：** 雖然文中提到類似 VLAN，但 P_Key 是基於金鑰的成員資格檢查。如果兩個設備的 P_Key 不匹配，它們甚至無法建立連線或交換封包，隔離層級非常嚴格。
 
 
