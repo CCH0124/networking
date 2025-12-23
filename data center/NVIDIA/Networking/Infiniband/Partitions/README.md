@@ -126,3 +126,4 @@
 [nvidia | howto-configure-ipoib-networks-with-gateway-and-multiple-pkeys](https://enterprise-support.nvidia.com/s/article/howto-configure-ipoib-networks-with-gateway-and-multiple-pkeys)
 [nvidia | in-between-ethernet-vlans-and-infiniband-pkeys](https://enterprise-support.nvidia.com/s/article/in-between-ethernet-vlans-and-infiniband-pkeys)
 [nvidia | howto-use-infiniband-pkey-membership-types-in-virtualization-environment--connectx-3--connectx-3-pro-x](https://enterprise-support.nvidia.com/s/article/howto-use-infiniband-pkey-membership-types-in-virtualization-environment--connectx-3--connectx-3-pro-x)
+[nvidia | understanding-up-down-infiniband-routing-algorithm](https://enterprise-support.nvidia.com/s/article/understanding-up-down-infiniband-routing-algorithm)
