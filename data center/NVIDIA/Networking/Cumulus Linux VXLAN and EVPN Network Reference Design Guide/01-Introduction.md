@@ -12,13 +12,12 @@
 
 ### 關鍵使用案例 (Key Use Cases)
 
-1.  **擴展存取層 (Scaling the access layer)**
-    * 主動-主動 (Active-active) 的 L2 和 L3 多重路徑 (multihoming) 對高可用性至關重要。
-    * 最佳化的東西向和南北向轉發。
-2.  **擴展 L2 網路 (Extending layer 2 networks)**
-    * 透過在所有存取交換器上分佈式託管主機 MAC 和 IPv4/IPv6 路由，並在存取交換器終端提供 ARP (位址解析協定) 和 ND (鄰居發現) 處理，最大限度地減少了傳輸量，同時避免了傳統的 STP。
-3.  **全網路頻寬利用 (Full network bandwidth utilization)**
-    * 在 EVPN VXLAN 作為存取層運行的情況下，網路可以實現最佳化的 ingress 路由和最短路徑橋接。EVPN 控制平面使 L2 擴展不再僅限於跨資料中心的實體機架或網路。
+1.  **多租戶虛擬私人網路 (VLAN / VRF)**：能在 L2 或 L3 甚至兩者同時進行網路隔離切割。
+2.  **存取層橫向擴展 (Scale out)**：
+    *   達到 Active-Active（雙活）高可用性。
+    *   減少廣播風暴 (Flooding)：透過協定主動發佈 MAC/IP 路由，並在交換器端做 ARP 代答。
+    *   **淘汰 STP**：可完全運用所有的網路鏈路頻寬。
+3.  **跨越單一資料中心 (DCI)**：L2 網路不僅能跨越實體機架，甚至能延伸跨越多個不同的實體資料中心。
 
 ### 拓撲 (Topology)
 
@@ -45,8 +44,9 @@
 
 ### 兩層 Clos 架構 (Leaf-Spine)
 
-圖 1 顯示了兩層 Clos (Leaf-Spine) 拓撲。綠色節點代表 Spine 交換器，黑色節點代表 Leaf 交換器。因此，該拓撲結構通常稱為 **Leaf-Spine 拓撲**。
+下圖顯示了兩層 Clos (Leaf-Spine) 拓撲。綠色節點代表 Spine 交換器，黑色節點代表 Leaf 交換器。因此，該拓撲結構通常稱為 **Leaf-Spine 拓撲**。
 
+![Two-Tier CLOS Topology](https://docs.nvidia.com/networking-ethernet-software/images/guides/VXLAN-EVPN-design-guide/CLOS.png)
 
 Spine 交換器僅連接到 Leaf 節點，Leaf 節點僅連接到伺服器。每個 Leaf 節點都連接到每個 Spine 節點。
 
