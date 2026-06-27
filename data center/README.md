@@ -14,6 +14,10 @@
 
 [nvidia | clos-5](https://enterprise-support.nvidia.com/s/article/cabling-considerations-for-clos-5-networks#jive_content_id_Neighborhood_Groups)
 
-### NCCL 
+### NCCL
 
 [Nvidia | building-scalable-and-fault-tolerant-nccl-applications](https://developer.nvidia.com/blog/building-scalable-and-fault-tolerant-nccl-applications/)
+
+### dgx
+
+[NVIDIA DGX SuperPOD Rubin NVL8 Systems: Next Generation Scalable Infrastructure for AI Leadership](https://docs.nvidia.com/dgx-superpod/reference-architecture/scalable-infrastructure-rubinx86/latest/abstract.html)
