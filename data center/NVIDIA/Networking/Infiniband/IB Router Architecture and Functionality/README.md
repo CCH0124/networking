@@ -1,186 +1,180 @@
+# IB 路由器架構與功能 (IB Router Architecture and Functionality)
 
-* **網路分割 (Segmentation)：** InfiniBand (IB) 路由器的主要功能是將一個超大型的網路，切割成數個較小的子網 (Subnets)。
-* **功能優勢：**
-    * **隔離性 (Isolation)：** 可以將特定的子網彼此隔開，提升安全性或故障隔離能力。
-    * **擴展性 (Scalability)：** 透過這種架構，能夠構建出規模極大的網路環境。
-* **文章主旨：** 該篇文章後續將深入探討 IB 路由器的「架構」與「功能」。
-
-## Terminology
-
-|英文術語|中文翻譯|詳細技術解釋|
-|---|---|---|
-|SM (Subnet Manager)|子網管理器|InfiniBand 網路中的 SDN (軟體定義網路) 控制器。它負責網路的初始化、路由計算與資源分配。|
-|SA (Subnet Administration)|子網管理 (介面/服務)|負責處理 SM 的帶內 (in-band) 北向介面的軟體。它實作了一種服務，讓 InfiniBand 用戶端軟體可以查詢 SM 並與之互動 (例如查詢路徑記錄)。|
-|OpenSM|OpenSM|符合 InfiniBand 標準的「子網管理器」與「管理」軟體 (通常指開源的實作版本)。|
-|OpenMPI|OpenMPI|開放訊息傳遞介面 (Message Passing Interface) 的實作版本，常用於高效能運算 (HPC) 的平行處理溝通。|
-|SRQ (Shared Receive Queue)|共享接收隊列|一種減少接收緩衝區 (Receive Buffer) 資源消耗的方法。透過讓多個 QP (隊列對) 共享同一個接收緩衝池，而非每個 QP 獨佔。|
-|Per Peer QP|對等點隊列對|每個通訊對等點 (Peer) 專用的 Queue Pair (QP)。|
-|LIDs (Local Identifier)|本地識別碼|InfiniBand 使用的 Layer 2 (連結層) 位址 (由 SM 負責分配)。類似於乙太網的 MAC，但在 IB 中是動態分配的。|
-|DLID (Destination LID)|目的端 LID|封包要傳送到的目的地 LID。|
-|multi-swid (Multi Switch-ID)|多重交換器 ID|在單一台實體 InfiniBand 交換器上，虛擬化出多個邏輯交換器的技術。|
-|P_Key (Partition Key)|分區金鑰|InfiniBand 用來限制特定流量發送、接收或轉發的方式。概念上類似於乙太網的 VLAN，但機制有所不同 (用於邏輯隔離)。|
-|Floating LID (FLID)|浮動 LID|用於從本地子網路由到遠端子網上的分葉交換機 (leaf switches)。|
-|multi-swid (Multi Switch-ID)|多重交換機 ID|在單一實體 InfiniBand 交換機上虛擬化出多個交換機的技術。|
-
->> **SM 與 LIDs 的關係：** 在 InfiniBand 網路中，設備插上線並不會自動通訊，必須等待 SM 掃描整個網路拓撲後，指派 LID 給每一個 Port，網路才會「活」過來。
-
->> **P_Key vs VLAN：** 雖然文中提到類似 VLAN，但 P_Key 是基於金鑰的成員資格檢查。如果兩個設備的 P_Key 不匹配，它們甚至無法建立連線或交換封包，隔離層級非常嚴格。
+> 原文連結：[NVIDIA Enterprise Support Portal | IB Router Architecture and Functionality](https://enterprise-support.nvidia.com/s/article/ib-router-architecture-and-functionality)
 
 
-## Overview
-* **為什麼需要 IB Router？**
-    * **隔離與效能：** 將網路切割成小子網，可以加快子網管理器 (SM) 的回應速度，並隔離不同節點間的流量 (例如將儲存網路與運算網路分開)。
-    * **超大規模擴展：** 支援超過 42,000 個節點 (Hosts) 的超大型叢集。
-* **高效能路由技術：** Mellanox IB 路由器使用 **「演算法路由 (Algorithmic Routing)」**。它不需要查表 (Table lookups) 就能直接從 L3 位址算出 L2 位址，因此能達到極低延遲與線速 (Line rate) 傳輸。
-* **關鍵限制 (Limitations)：**
-    * 目前僅支援 **單跳 (Single hop)** 路由，不支援跨越多個路由器的傳輸。
-    * 跨子網目前 **不支援多播 (Multicast)**。(此功能計畫在後續階段推出)
-    * 路由器本身 (如 SB7780) **不能** 運行 Embedded SM (嵌入式子網管理器) 或 SHARP (網路運算卸載) 功能。
- 
-## Single Hop Topologies
+## 簡介 (Introduction)
 
-單跳拓撲是指一種網路拓撲結構，假設兩個子網之間的所有 L3 連線需求，都必須透過至少一個路由器連接，如圖 1 所示。
+InfiniBand (IB) 路由器主要用於將一個超大型網路切割（Segmentation）成數個由 IB 路由器互聯的較小子網（Subnets）。  
+這種網路分割技術可用於：
+* **子網隔離 (Isolation)**：將特定子網彼此隔開，提升安全性、穩定性與故障隔離能力。
+* **超大規模擴展 (Scalability)**：構建出規模極其龐大的超大型運算網路。
 
-* **圖 1 (Figure 1)：** 單跳拓撲 (正確架構)。顯示 Subnet 0 與 Subnet 1 透過中間的一個 Router 直接相連。
+本文將深入探討 IB 路由器的架構設計與運作功能。
 
-當有兩個子網未透過路由器直接相連時，若流量需要經過多個路由器跳躍 (hops) 才能從一端到達另一端，我們稱此拓撲為多跳 (multi-hop)。
 
-* **圖 2 (Figure 2)：** 包含兩個子網的多跳拓撲 (不支援的架構)。
-* **結論：** 在截至 2016 年 5 月的 IB 路由規範下，這些子網之間將 **無法** 進行 L3 路由通訊 (如圖中紅色 X 所示)。
+## 術語表 (Terminology)
 
-## Network Topology Design
+| 英文術語 | 中文翻譯 | 詳細技術解釋 |
+| :--- | :--- | :--- |
+| **SM** (Subnet Manager) | 子網管理器 | InfiniBand 網路的核心集中式控制器（SDN Controller），負責整個子網的拓撲探索、LID 指派、路由計算與網路初始化。 |
+| **SA** (Subnet Administration) | 子網管理介面 | SM 提供的帶內 (In-band) 查詢服務介面，主機端透過 SA 查詢路徑資訊 (PathRecord) 與分區資訊。 |
+| **OpenSM** | 開源子網管理器 | 符合 InfiniBand 規範標準的開源子網管理器軟體實作。 |
+| **OpenMPI** | 開源訊息傳遞介面 | HPC 平行運算中廣泛使用的 MPI 通訊函式庫。 |
+| **SRQ** (Shared Receive Queue) | 共享接收隊列 | 讓多個 QP (隊列對) 共享同一個接收緩衝池，大幅降低大規模並行通訊時記憶體緩衝區的消耗。 |
+| **Per Peer QP** | 對等點專屬隊列對 | 每個通訊端點 (Peer) 建立專屬的獨立 Queue Pair (QP)。 |
+| **LID** (Local Identifier) | 本地識別碼 | InfiniBand 的 Layer 2 (連結層) 位址 (16-bit)，由 SM 動態指派，相當於乙太網的 MAC 位址。 |
+| **DLID** (Destination LID) | 目的端 LID | 封包於 L2 標頭 (LRH) 中所填寫的目的端 LID。 |
+| **GID** (Global Identifier) | 全域識別碼 | InfiniBand 的 Layer 3 (網路層) 位址 (128-bit，IPv6 格式)，用於跨子網全域路由。 |
+| **Multi-SWID** (Multi Switch-ID) | 多重交換器 ID | 在單台實體 InfiniBand 交換機晶片上，虛擬化出多個邏輯交換器介面的技術。 |
+| **P_Key** (Partition Key) | 分區金鑰 | 限制特定流量存取的邏輯隔離標籤（類似 Ethernet VLAN，但基於成員金鑰嚴格匹配）。 |
+| **FLID** (Floating LID) | 浮動 LID | 用於從本地子網路由到遠端子網分葉交換機 (Leaf Switches) 的動態 LID 機制。 |
 
-* **避免信用循環 (Credit-Loop Freedom)：** 設計多子網拓撲時，最關鍵的挑戰是防止跨路由器的流量形成「緩衝區依賴循環 (buffer dependency loops)」。使用 **Up/Dn (上/下) 路由演算法** 是一種簡單有效的方法，它限制了流量的路徑 (禁止「先下後上」的轉向)。
-  * **單一子網內**的信用循環自由由 SM (子網管理器) 保證，它會防止形成信用循環。
-  * **跨子網時**，當我們連接多個子網時，涉及跨越路由器的多個流量流可能會產生此類依賴循環的風險。為了避免信用循環，通常需要詳細且精確的設計，這可能涉及使用 InfiniBand **虛擬通道 (Virtual Lanes)** 和**服務等級 (Service Levels)** 來支援多樣化的拓撲集合。
-* **兩種建議的拓撲方案：**
-    * **方案 A (新叢集)：** 將 IB 路由器放置在所有子網的**頂端 (Top)**。這適合全新設計的環境。
-      ![](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka08Z000000hvTG&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5P)
-    * **方案 B (擴充現有子網)：** 當需要將多個「現有的舊子網」連接到一個「新的共用子網 (如儲存區)」時，路由器應位於**新子網的頂端**，但在**舊子網的下方**。
-      ![](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka08Z000000hvTG&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5U)
-* **配置要求：**
-    * 必須確保同一子網使用的所有連接埠都配置了相同的 **subnet_prefix**。
-    * 路由器數量需足夠，以維持所需的頻寬。
-    * 路由器可直接支援 Fat-tree、Torus 和 Mesh 拓撲，無需複雜的路由鏈配置。
-    * OpenSM 路由引擎鏈 (Routing engine chains) 提供了許多單一引擎無法支援的路由拓撲選項
- 
-## Partitions
-* **管理控制與隔離：** 即使有路由器連接，您仍可透過 P_Key 禁止特定子網間的通訊。這是一種具成本效益的解決方案，讓單一路由器能服務多個隔離群組。
-* **P_Key 配置規則：**
-    * 若要讓兩個子網通訊，它們**必須共用相同的 P_Key 號碼**。IB 規範不允許跨子網更改 P_Key。
-    * **無法路由轉換：** 不可能在同一個或不同子網上，將封包從一個 P_Key 路由到另一個 P_Key。
-* **實作方式：** P_Key 的分配由各子網的 SM 執行，並透過 `partitions.conf` 檔案進行設定。
+## 概述 (Overview)
 
-![Figure 4 - P_Key Number Sharing](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka08Z000000hvTG&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5e)
+### 1. 為什麼需要 IB 路由器？
+* **管理效率與故障隔離：** 將網路劃分為多個小子網，可顯著縮短子網管理器 (SM) 的計算與掃描回應時間。當單一子網內發生鏈路故障或拓撲變更時，SM 的拓撲重算僅限於該子網，完全不影響其他子網的正常運行。
+* **突破叢集規模上限：** InfiniBand 單一子網的 16-bit LID 尋址空間限制了最大節點數（扣除保留位址後約 42,000 ～ 48,000 個端點）。IB 路由器能打破單子網規模上限，支援數萬至數十萬節點的超大型叢集。
 
-這張圖表展示了如何利用 **P_Key (Partition Key)** 在 InfiniBand 網路中實現「即使有路由器連接，也能達成邏輯隔離」的架構。
+### 2. 高效能路由架構
+Mellanox IB 路由器採用 **「演算法路由 (Algorithmic Routing)」**。硬體不需要在最後一跳維護並查詢龐大的 L3-to-L2 (GID 到 LID) 對應表，而是直接從 L3 GID 計算出 L2 LID，從而實現**極低延遲**與**全線速 (Wire-speed)** 轉發。
 
-這是一個典型的 **「共享資源 vs. 隔離用戶」** 的應用場景（例如：多個部門共享同一台儲存設備，但部門之間不可互通）。
+### 3. 當前關鍵限制 (Limitations)
+* **僅支援單跳 (Single-hop) 路由：** 兩個子網之間只能經過一台/一層路由器，不支援跨越多個路由器的多跳 (Multi-hop) 轉發。
+* **不支援跨子網多播 (Multicast)：** 跨子網目前僅支援單播 (Unicast) 流量。
+* **路由器設備能力限制：** 啟用 IB 路由功能的設備（例如 SB7780 交換機）**不能**同時運行嵌入式子網管理器 (Embedded SM) 或 SHARP (網路運算卸載加速)。
 
-以下是詳細的技術解構：
 
-### 1. 架構圖解分析
-圖中有三個子網 (S1, S2, S3) 透過中間的綠色線條（代表 IB 路由器）連接在一起。
+## 單跳拓撲 (Single Hop Topologies)
 
-* **S1 (核心/共享資源區)：**
-    * **配置：** 同時擁有 **P_Key2** 和 **P_Key3**。
-    * **角色：** 這通常是「共享儲存設備 (Storage)」或「管理節點」。因為它擁有多把鑰匙，所以它能跟不同群組的人溝通。
-* **S2 (用戶區 A)：**
-    * **配置：** 只有 **P_Key2**。
-    * **角色：** 只能跟持有同樣鑰匙 (P_Key2) 的對象通訊。
-* **S3 (用戶區 B)：**
-    * **配置：** 只有 **P_Key3**。
-    * **角色：** 只能跟持有同樣鑰匙 (P_Key3) 的對象通訊。
+### 1. 支援架構：單跳拓撲 (Single Hop)
+兩個子網之間的所有 Layer 3 通訊，必須透過**直連的至少一台 IB 路由器**進行連接：
+* **架構：** `Subnet 0` $\longleftrightarrow$ `IB Router` $\longleftrightarrow$ `Subnet 1`。
+    ![Single Hop Topology](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU55)
+* 流量從來源子網進入路由器後，下一跳必須直接進入目的子網。
 
-### 2. 通訊邏輯 (誰可以跟誰說話？)
+### 2. 不支援架構：多跳拓撲 (Multi-Hop)
+當兩個子網沒有透過同一組路由器直接相連，若流量需要經過多個路由器連續跳躍才能抵達：
+* **架構：** `Subnet 0` $\longleftrightarrow$ `Router 1` $\longleftrightarrow$ `中間網路/Router 2` $\longleftrightarrow$ `Subnet 1`。
+    ![Multi-Hop Topology with Two Subnets L3 routing between these subnets is Not Supported](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5F)
+* **結論：** 在當前 IB 路由規範下，此類子網之間**不支援** L3 路由通訊。
 
-根據文件中的規則：「若要讓兩個子網通訊，它們**必須共用相同的 P_Key 號碼**」。
 
-* **S1 <---> S2 (⭕ 通訊成功)：**
-    * S1 有 P_Key2，S2 也有 P_Key2。
-    * 兩者擁有共同的 P_Key，因此封包可以順利通過路由器傳輸。
-* **S1 <---> S3 (⭕ 通訊成功)：**
-    * S1 有 P_Key3，S3 也有 P_Key3。
-    * 擁有共同鑰匙，通訊成功。
-* **S2 <---> S3 (❌ 通訊阻斷)：**
-    * S2 只有 P_Key2。
-    * S3 只有 P_Key3。
-    * **結果：** 雖然它們物理上都接在同一台路由器上，但因為**沒有共同的 P_Key**，路由器會拒絕轉發這兩者之間的流量。這就是圖表下方文字 "S2 and S3 can't talk" 的意思。
+## 網路拓撲設計 (Network Topology Design)
 
-### 3. 這個架構解決了什麼問題？
+### 1. 避免信用循環 (Credit-Loop Freedom)
+InfiniBand 是無損網路 (Lossless Fabric)，採用基於 Credit（信用額度）的硬體流量控制。若緩衝區路徑形成封閉迴路且資源耗盡，會造成嚴重的**死鎖 (Deadlock)**。
+* **子網內部：** 由各子網的 SM 運行 **Up/Dn (上/下)** 演算法，強制規定流量「禁止先下後上 (Down-to-Up)」，以保證信用無環路。
+* **跨子網時：** 當多個子網透過路由器互聯時，必須特別注意跨邊界流量造成的循環依賴。可透過精確的階層規劃，或搭配 **虛擬通道 (Virtual Lanes, VL)** 與 **服務等級 (Service Levels, SL)** 來杜絕信用循環。
 
-這張圖強調了 IB 路由的一項重要限制與特性：**路由器無法進行 P_Key 的轉換 (Mapping/Translation)**。
+### 2. 兩種官方推薦拓撲方案
+* **方案 A（適用於新建全新叢集）：**
+  * 將 IB 路由器部署在所有子網的**最頂端 (Top)**，扮演類似 Core / Super-Spine 的角色。
 
-* **不能這樣做：** 你不能要求路由器把 S2 送來的 P_Key2 封包，「改標籤」變成 P_Key3 後送給 S3。
-* **只能這樣做：** 封包出發時是什麼 P_Key，到達目的地時必須是同一個 P_Key。
+  ![First optional simple topology place routers at "top"](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5P)
 
-**總結來說：**
-這張圖展示了一種**低成本的隔離方案**。你不需要買兩台物理路由器來分開 S2 和 S3，只需要在一台路由器上配置不同的 P_Key，就能讓 S2 和 S3 都能存取 S1 (共享資源)，但 S2 和 S3 彼此完全隔離，互不干擾。
+* **方案 B（適用於擴充既有叢集，如外接儲存）：**
+  
+  ![Second optional simple topology place routers at "top" of common subnet and below the old subnets](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5U)
 
-## IPoIB
-InfiniBand 路由器 (IB Router) 無法直接傳輸 IP 封包，因此需要額外的配置來解決跨網段的 IP 通訊問題。
+  * 將 IB 路由器部署在「新建共用子網（如 Storage Subnet）」的**頂端**，但置於「既有舊子網（如 Compute Subnet）」的**下方**。
 
-**1. 核心限制**
-* **IB 路由器不處理 IP：** IB 路由器只處理 InfiniBand 協議，不會處理或轉發 IPoIB (IP over InfiniBand) 流量，因為這些封包缺少 GRH 標頭。
-* **應用需求：** 許多管理介面或儲存系統仍需依賴 IP 協議進行通訊。
+### 3. 配置規範要求
+* 連接至同一個子網的所有路由器連接埠，必須配置完全相同的 **`subnet_prefix`**。
+* 必須部署足夠數量的路由器以滿足跨子網所需的聚合頻寬。
+* OpenSM 支援 Fat-tree、Torus 和 Mesh 等多種路由引擎拓撲組合。
 
-**2. 解決方案 (二選一)**
-* **方案 A（使用外部網路）：** 另外架設一套乙太網路 (Ethernet) 來專門處理 IP 通訊。
-* **方案 B（使用 Linux 作為 IP 路由器）：**
-    * 在每個 IB 子網上劃分不同的 IP 網段（Subnet）。
-    * 在子網之間放置一台 Linux 主機，配置多個 IPoIB 介面。
-    * 讓這台 Linux 主機擔任「軟體路由器」的角色來轉發 IP 封包。
-    * *優點：* 不需要額外的乙太網路硬體，且因為這類管理流量通常不大，普通 Linux 主機即可勝任。
 
-**3. 最佳實踐建議**
-* **推薦做法：** 為每個 IB 子網設定**不同**的 IPoIB 網段，並透過路由器轉發。
-* **不推薦做法：** 強行將所有 IB 子網設定在同一個 IPoIB 大網段下（這可能導致廣播風暴或邏輯錯誤）。
+## 分區金鑰隔離 (Partitions & P_Key)
 
-https://www.tecmint.com/setup-linux-as-router/
+即使各子網間存在實體路由器連線，管理員依然可以透過 **P_Key (Partition Key)** 達成嚴格的邏輯隔離：
 
-## Algorithmic Router Architecture
+![P_Key Number Sharing](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5e)
 
-核心在於解決 InfiniBand 網路中，跨子網路由時「地址轉換」帶來的延遲問題。
+### 1. P_Key 跨子網規則
+* **必須共享相同 P_Key：** 兩個子網內的節點若要跨路由器通訊，雙方**必須配置相同的 P_Key 數值**。
+* **無 P_Key 轉換機制：** IB 規範**不允許**路由器在轉發時改寫或轉換 P_Key（即無法將來源的 `P_Key A` 改為目的地的 `P_Key B`）。
 
-**1. 設計目的**
-* **極致效能：** 為了實現全線速 (Wire Speed) 轉發並將延遲降至最低。
-* **簡化架構：** 消除傳統路由器在最後一跳需要維護龐大對映表 (Mapping Table) 來將 GID 轉換為 LID 的負擔。
+### 2. 典型架構（共享資源與租戶隔離）
+* **S1 (核心共享儲存區)：** 同時具備 `P_Key 2` 與 `P_Key 3`。
+* **S2 (租戶 A / 運算區)：** 僅配置 `P_Key 2`。
+* **S3 (租戶 B / 運算區)：** 僅配置 `P_Key 3`。
 
-**2. 核心機制：GID 直接映射 LID**
-* **傳統方式：** 路由器收到封包後，需查表得知目的地的 GID 對應哪個 LID，才能進行二層轉發。
-* **演算法路由方式：** 直接將 L2 地址 (LID) **嵌入** 到 L3 地址 (GID) 中。
-    * 具體做法是取 **GID 的最後 16 個位元 (16 LSB)** 直接作為 **LID**。
-    * 路由器不需要「學習」或「查找」LID，只需「提取」即可。
+**通訊結果：**
+* `S1` $\longleftrightarrow$ `S2`：通訊成功（雙方皆持有 `P_Key 2`）。
+* `S1` $\longleftrightarrow$ `S3`：通訊成功（雙方皆持有 `P_Key 3`）。
+* `S2` $\longleftrightarrow$ `S3`：**完全阻斷**（無共同 P_Key，即使接在同一台實體路由器上也絕對無法通訊）。
 
-**3. 限制與特性**
-* **固定參數：** 為了追求速度，除了地址之外的其他 L2 參數（如 P_Key, Service Level, MTU 等）無法動態調整，路由器會直接複製進入封包的原始設定到送出封包中。
-* **特定格式：** 必須使用特定的 GID 格式（如下圖所示），這被稱為「演算法可路由 GID」。
-  ![Routable GID Format](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka08Z000000hvTG&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5j)
+> **價值：** 透過單一組實體路由器即可提供多租戶隔離，大幅降低硬體建置成本。
 
-**簡單來說：** 這是一種透過規範 IP/GID 地址格式（將硬體地址藏在軟體地址的尾端），讓硬體路由器能「無腦」快速轉發的技術。
+## IP over InfiniBand (IPoIB)
 
-[nvidia | lrh-and-grh-infiniband-headers](https://enterprise-support.nvidia.com/s/article/lrh-and-grh-infiniband-headers)
+* **核心限制：**
+  * IB 路由器是專為 InfiniBand RDMA 原生協定設計的硬體設備，**不會原生轉發 IPoIB 流量**（因為 IPoIB 封裝缺乏演算法路由相容的 GRH 標頭）。
+* **解決方案：**
+  1. **方案 A（專用乙太網路）：** 額外架設 Out-of-band Ethernet 網路專門處理 IP 業務與管理流量（推薦方案）。
+  2. **方案 B（Linux 軟體 IP 路由器）：**
+     * 為各 IB 子網分配不同的 IP 網段。
+     * 在子網間部署一台配置多張 IPoIB 網卡的 Linux 主機。
+     * 開啟 Linux 核心的 IP 轉發（`net.ipv4.ip_forward = 1`），由 Linux 主機代為轉發跨子網的 IP/IPoIB 封包。
 
-## How does IB Routing Work? A step by step description
+## 演算法路由器架構 (Algorithmic Router Architecture)
 
-此章節描述了 InfiniBand 跨子網路由的詳細工作流程，主要解決了「如何找到路徑」與「如何轉發封包」的問題。
+這是 Mellanox 實現線速低延遲路由的核心機制：
 
-**1. 初始化與環境準備 (Setup Phase)**
-* **分配 ID：** OpenSM 負責分配 LID 和 GID。
-* **快取分發：** 為了加速解析，IP 與 GID 的對映表會預先寫入 `ibacm` 快取並分發到所有主機。
-* **工具：** 使用 `ib2ib` 腳本自動化收集並建立這些設定檔。
+### 1. 設計目標
+消除傳統 L3 路由器在轉發末端需要維護並查詢龐大「L3 GID $\to$ L2 LID」對應表的硬體負擔與延遲開銷。
 
-**2. 連線建立流程 (The Flow)**
-* **第一步 (App -> IP)：** 應用程式知道目標 IP，透過 DNS/Hosts 解析。
-* **第二步 (IP -> GID)：** 透過 `ibacm` 快取，將目標 IP 轉換為 IB 的 Global ID (GID)。
-* **第三步 (GID -> L2 Path)：** 在發送任何 InfiniBand 流量之前，客戶端應用程式或核心模組必須取得描述目的地 L2 位址的路徑記錄 (PathRecord)
-    * 主機向 Subnet Administrator (SA) 詢問：「我要去這個 GID，該怎麼走？」
-      * PathRecord 是透過提供來源和目的地 GID 向子網管理器 (SA) 取得的。
-    * OpenSM 計算路徑，選擇合適的路由器（考慮 P_Key 等權限），並回傳該**路由器的 LID** 作為下一跳地址。
+### 2. 核心機制：GID 直接映射 LID
+* **傳統方式：** 收到跨網封包後，透過查表或 ARP 機制得知目的 GID 對應的本地 LID。
+* **演算法路由：** 直接將目標節點的 L2 地址 (LID) **內嵌** 於 L3 地址 (GID) 中。
+  * **GID 格式：** 採用特定可路由 GID 格式（Routable GID）：
+    ![Routable GID Format](https://enterprise-support.nvidia.com/servlet/rtaImage?eid=ka0Vv000000AnNI&feoid=00N8Z000003jPco&refid=0EM8Z000003DU5j)
+    * 前 64 位元：子網字首 (Subnet Prefix)
+    * 中間 48 位元：保留位元 (Reserved)
+    * **後 16 位元 (16 LSB)：目的端節點的真實 LID**
+* **硬體轉發：** 路由器硬體只需直接提取 DGID 的最後 16 位元作為新的 DLID，不需查表即可全速轉發。
 
-**3. 關鍵轉發機制 (Forwarding Mechanism)**
-* **來源端：** 發送封包時，必須使用正確的 Source GID (SGID)，這是在 IPoIB 設定階段就綁定好的。
-* **路由器端：** 路由器執行極簡化的轉發（這與前一張圖片提到的「演算法路由器」呼應）。它不需要查表，而是直接從封包標頭的 DGID 中**提取**出最終目的地的 LID，替換掉原本的 DLID，然後將封包送往目標子網。
+[Nvidia | LRH and GRH InfiniBand Headers](https://enterprise-support.nvidia.com/s/article/lrh-and-grh-infiniband-headers)
 
-**一句話總結：**
-IB 路由透過預先填充的 IP-GID 對映表來加速解析，並由 OpenSM 指派最佳路由器，最後路由器透過從 GID 直接提取 LID 的方式實現快速轉發。
+
+## IB 路由逐步運作流程 (How does IB Routing Work? A Step-by-Step Description)
+
+**InfiniBand 路由運作原理：逐步流程說明**
+
+### 1. 網路設定 (Network Setup)
+
+在網路建置期間，各子網的 OpenSM 必須為終端連接埠（end-ports）同時分配 LID 與可路由的 GID（Routable GID）。自 2016 年 5 月起，MOFED 解決方案仰賴 `ibacm` 來提供 IP 到 GID 的解析服務。所有終端主機皆需預先發布已填入資料的 `ibacm` 快取，其中包含 IP 對應至可路由 GID 的對照表。名稱至 IP 的解析可透過 DNS 或 `/etc/hosts` 檔案完成，無論採用哪種方式，都必須事先定義名稱與 IP 的對應關係。
+
+為支援上述三項設定作業，MOFED 提供了一套 `ib2ib*` 指令稿。這套機制可用於收集各子網的 GUID 與 IP，並產生 SM 的 `guid2lid`、`ibacm` 快取檔案，以及 `/etc/hosts` 和 `dhcp.db`。
+
+### 2. 名稱解析 (Name Resolution)
+
+如前所述，名稱至 IP 的解析可經由 DNS 或 `/etc/hosts` 檔案來完成。
+
+
+### 3. 連線建立 (Connection Establishment)
+
+取得目的端的 IP 後，應用程式應呼叫 `librdmacm`；接著該程式會進一步使用 `ibacm` 服務，或者當核心已具備掛鉤（hook）機制時，也會呼叫 `ibacm` 進行解析。連線請求（Connection Request）中所提供的資訊，必須包含從本地來源端 HCA 埠、穿過路由器、最後抵達目的地主機埠的 PathRecord。因此，解析的第一步是找出目的地的可路由 GID，接著找出轉發流量所需的路由器 L2 位址。
+
+完成解析後，系統會向遠端節點的連線管理員（CM，透過 QP1）發送連線請求以啟動連線。位於另一子網節點上的連線管理員（CM），通常會要求在連線請求中夾帶從該節點返回發起節點的反向 PathRecord。然而，當發起端連接埠與 CM 節點不在同一個子網時，實際上會略過這些欄位，改為直接使用封包標頭（packet headers）中所提供的資訊，因此不需要額外提供反向 PathRecord。
+
+### 4. IP 至 GID 位址解析 (IP to GID Address Resolution)
+
+在 2016 年 5 月版本中，IP 到 GID 的解析是基於 `ibacm` 快取完成的。快取檔案已於設定階段產生並發派至叢集中的所有節點。當呼叫 `librdmacm` 時，它會優先呼叫 `ibacm` 執行解析，隨後 `ibacm` 會在其快取中查詢對應的 IP 至 GID 記錄。
+
+### 5. 下一跳（L2）位址解析 (Next Hop (L2) Address Resolution)
+
+在發送任何 InfiniBand 流量之前，用戶端應用程式或核心模組必須取得一筆描述目的地 L2 位址的 PathRecord。PathRecord 是透過提供來源端與目的端 GID，向子網管理代理（SA, Subnet Administrator）查詢取得。
+
+此處至關重要的是，所提供的目的端 GID（Destination GID）必須包含目的地的子網前綴（Subnet Prefix）以及其 GUID。具備路由器支援功能的 OpenSM 會檢查可連接至目的端子網的可用路由器，並可進一步依據路由器策略檔（Router policy file）或 PathRecord 查詢中指定的條件進行篩選。例如，若查詢中指定了特定的 P_Key，則僅允許經由在兩端子網連接埠上皆支援該 P_Key 的路由器進行轉發。接著，SM 會執行以目的地為基準的路由（destination-based routing），在候選路由器中選出負責轉發流量的節點，並將該路由器的 LID 作為 DLID 填入回傳的 PathRecord 中。
+
+### 6. 將可路由流量發送至網路 (Sending Routable Traffic to the Network)
+
+發送流量時必須附帶正確的可路由 SGID，以便位於路由器另一端的接收節點能夠查詢 PathRecord 並進行回覆。InfiniBand 規範提供了讓 SM 為每個連接埠配置子網前綴的機制，同時也允許 SM 將多個 GUID 關聯至同一個連接埠。
+
+問題在於：設備在發送封包時，如何得知該使用哪一個 GUID？答案是：為了讓 `librdmacm` 與其他核心用戶端能套用正確的 GUID，我們必須在設定階段將該 IB 埠的 IPoIB 與特定的可路由 GID 建立關聯。
+
+### 7. 經由路由器轉發 (Forwarding Through the Router)
+
+在單跳路由（single-hop routing）架構下，路由器本身僅需執行最基礎的處理工作：將封包的 DLID 替換為最終目的地的 DLID，而該目的地 DLID 可直接從封包全域路由標頭（GRH, Global Route Header）中的 DGID 擷取出來。
