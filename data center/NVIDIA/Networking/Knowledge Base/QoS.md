@@ -612,6 +612,43 @@ cumulus@switch:~$ nv config apply
                         [ Instant NACK / Fast Retransmit ]
 ```
 
+## 可以一起設定？（從 ASIC 封包處理流水線看）
+
+
+當一個數據封包通過交換器時，各個 QoS 機制會在不同的硬體位置**分工合作**：
+
+```text
+[ Ingress 進站 ] ──> [ 晶片內部與緩衝區 ] ──> [ Egress 出站 ] ──> [ 控制平面 ]
+       │                      │                    │                 │
+       ├── Classification     ├── Flow Control     ├── Egress        └── CoPP
+       │   (Trust L2/L3)      │   Buffers          │   Scheduler         (Control
+       │           │         │   (ETS/DWRR)        Plane
+       │                      │                    │          Policer)
+       └── Ingress Policing   ├── PFC / PFC        │                
+           (3-Color)          │   Watchdog         ├── Egress
+                    │         │   Shaping
+                              │                    │  
+                              └── ECN Congestion   │
+                                  Control          └── Egress Remark
+                                           
+```
+
+* **Ingress (進站階段)**：先透過 **Trust Mode** 進行流量分類（Classification），並可用 **Policing** 阻擋超過 SLA 的異常突發流量。
+* **Buffer & Queue (緩衝區管理階段)**：劃分 **Flow Control Buffers**，同時套用 **PFC**（防止硬體溢位）與 **ECN**（通知主機主動降速）。
+* **Egress (出站階段)**：透過 **ETS (DWRR/SP)** 進行佇列頻寬分配，以 **Shaping** 平滑輸出速率，並重新 **Remark** 標頭。
+* **CPU Protection (控制平面階段)**：同步開啟 **CoPP** 確保 BGP / ARP 等關鍵控制封包不被數據流衝垮。
+
+### RoCEv2
+
+在 NVIDIA Spectrum-X AI 網路架構中，只下達一行一鍵配置命令 `nv set qos roce`，系統就會在底層**同時開啟並聯動以下所有 QoS 功能**：
+
+1. **Classification (信任機制)**：自動開啟 **Trust L2/L3**，將 RoCE 數據 (DSCP 26) 歸為 Priority 3，CNP 訊號 (DSCP 48) 歸為 Priority 6。
+2. **Flow Control Buffers (緩衝池)**：自動切割出 `roce-lossless` 專屬無損記憶體池。
+3. **PFC & PFC Watchdog (流控與防死鎖)**：在 Priority 3 啟用 PFC，並開啟 PFC Watchdog 防範死鎖風暴。
+4. **ECN (壅塞控制)**：在 Traffic Class 3 啟用 ECN 門檻（`min-threshold 40KB`, `max-threshold 200KB`），優先觸發主機降速。
+5. **Egress Scheduler (ETS 佇列排程)**：將 CNP 訊號 (TC 6) 設定為 **Strict Priority** 優先發送，RoCE 數據 (TC 3) 設定為 **DWRR 50%** 頻寬保障。
+6. **DCBX TLV (自動宣告)**：透過 LLDP 自動將這套 QoS 參數通報給 ConnectX / BlueField 網卡。
+
 ## 參考資源
 
 * [Quality-of-Service](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-516/Layer-1-and-Switch-Ports/Quality-of-Service/)
