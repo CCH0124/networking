@@ -658,3 +658,4 @@ cumulus@switch:~$ nv config apply
 ## 參考資源
 
 * [Quality-of-Service](https://docs.nvidia.com/networking-ethernet-software/cumulus-linux-516/Layer-1-and-Switch-Ports/Quality-of-Service/)
+* [nv QoS Commands](https://docs.nvidia.com/networking-ethernet-software/nvue-reference/Set-and-Unset-Commands/QoS/)
