@@ -231,6 +231,12 @@ PFC Watchdog 就像是一個安全保險絲：
 定時輪詢監控，一旦對端不再發送 PAUSE 訊框，立刻自動恢復為正常的 PFC 無損狀態。
 ```
 
+在 Cumulus Linux 5.16.8 中，PFC Watchdog 能有效區分「真實死鎖（Deadlock）」與「常態壅塞（Congestion）」。只有在單一輪詢間隔內同時滿足以下三項條件時，才會判定為死鎖：
+
+1. **佇列佔用量**超過 `transmit-queue-threshold`。
+2. 佇列在該間隔內**實際發送的訊框數** $\le$ `tx-frames-threshold`（完全停止發送）。
+3. 接收到的 PAUSE 累計時長超過 `rx-pause-duration multiplier` 計算門檻。
+
 3. PFC vs. Link Pause（802.3x）的差異
 
 * **PFC（802.1Qbb）**：針對特定優先權（Priority 0~7）暫停，只會凍結高優先權的 RoCE 流量，不影響普通流量。
